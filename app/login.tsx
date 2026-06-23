@@ -33,7 +33,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      Alert.alert('Berhasil', 'Selamat datang kembali di CineTracker!');
+      Alert.alert('Berhasil', 'Selamat datang kembali di MovieLicious');
       router.replace('/(tabs)'); 
     } catch (error: any) {
       let errorMessage = 'Gagal login. Periksa kembali akun Anda.';

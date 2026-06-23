@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// 1. UBAH DI SINI: Masukkan API Key TMDB milikmu yang tadi
+// 1. API Key TMDB milikmu
 const TMDB_API_KEY = '87dea7a5820896fbada3fca1414cd008'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -26,13 +26,15 @@ export interface Movie {
 }
 
 // ==========================================================
-// FITUR 1: Halaman Utama & Pencarian (Tanggung Jawab Anggota 1)
+// FITUR 1: Halaman Utama & Pencarian (Dukung Pagination Server)
 // ==========================================================
 
-// Mengambil Film Populer
-export const getPopularMovies = async (): Promise<Movie[]> => {
+// Mengambil Film Populer dengan dukungan Parameter Page
+export const getPopularMovies = async (page: number = 1): Promise<Movie[]> => {
   try {
-    const response = await tmdbApi.get('/movie/popular');
+    const response = await tmdbApi.get('/movie/popular', {
+      params: { page } // Menambahkan parameter halaman ke TMDB
+    });
     return response.data.results; 
   } catch (error) {
     console.error("Gagal mengambil data film populer:", error);
@@ -40,11 +42,40 @@ export const getPopularMovies = async (): Promise<Movie[]> => {
   }
 };
 
-// Mencari Film berdasarkan judul
-export const searchMovies = async (query: string): Promise<Movie[]> => {
+// 🛠️ Mengambil Film dengan Rating Tertinggi (Top Rated)
+export const getTopRatedMovies = async (page: number = 1): Promise<Movie[]> => {
+  try {
+    const response = await tmdbApi.get('/movie/top_rated', {
+      params: { page }
+    });
+    return response.data.results; 
+  } catch (error) {
+    console.error("Gagal mengambil data film top rated:", error);
+    throw error; 
+  }
+};
+
+// 🛠️ Mengambil Film yang Akan Datang (Upcoming)
+export const getUpcomingMovies = async (page: number = 1): Promise<Movie[]> => {
+  try {
+    const response = await tmdbApi.get('/movie/upcoming', {
+      params: { page }
+    });
+    return response.data.results; 
+  } catch (error) {
+    console.error("Gagal mengambil data film upcoming:", error);
+    throw error; 
+  }
+};
+
+// Mencari Film berdasarkan judul dengan dukungan Parameter Page
+export const searchMovies = async (query: string, page: number = 1): Promise<Movie[]> => {
   try {
     const response = await tmdbApi.get('/search/movie', {
-      params: { query }
+      params: { 
+        query,
+        page // Menambahkan parameter halaman ke pencarian
+      }
     });
     return response.data.results;
   } catch (error) {
@@ -53,14 +84,14 @@ export const searchMovies = async (query: string): Promise<Movie[]> => {
   }
 };
 
-// 🛠️ NEW FUNCTION: Mengambil film berdasarkan genre (discover)
-// Fungsi ini akan langsung menembak server TMDB untuk meminta 20 film penuh per genre!
-export const getMoviesByGenre = async (genreId: string | number): Promise<Movie[]> => {
+// Mengambil film berdasarkan genre (discover) dengan dukungan Parameter Page
+export const getMoviesByGenre = async (genreId: string | number, page: number = 1): Promise<Movie[]> => {
   try {
     const response = await tmdbApi.get('/discover/movie', {
       params: {
         with_genres: genreId,
-        sort_by: 'popularity.desc' // Diurutkan berdasarkan film yang paling populer di genre tersebut
+        sort_by: 'popularity.desc',
+        page // Menambahkan parameter halaman ke filter genre
       }
     });
     return response.data.results;
@@ -71,16 +102,59 @@ export const getMoviesByGenre = async (genreId: string | number): Promise<Movie[
 };
 
 // ==========================================================
-// FITUR 2: Detail Film (Tanggung Jawab Anggota 1)
+// FITUR 2: Detail Film
 // ==========================================================
 
-// TAMBAHKAN FUNGSI INI: Mengambil detail lengkap 1 film spesifik berdasarkan ID
+// Mengambil detail lengkap 1 film spesifik berdasarkan ID
 export const getMovieDetails = async (movieId: string | number): Promise<Movie> => {
   try {
     const response = await tmdbApi.get(`/movie/${movieId}`);
     return response.data;
   } catch (error) {
     console.error(`Gagal mengambil detail film dengan ID ${movieId}:`, error);
+    throw error;
+  }
+};
+
+// ==========================================================
+// TAMBAHAN BARU: Fitur Detail Tambahan (Cast, Rekomendasi & Video Trailer)
+// ==========================================================
+
+// 1. Mengambil daftar pemain (Cast/Aktor) berdasarkan ID Film
+export const getMovieCredits = async (movieId: string | number): Promise<any[]> => {
+  try {
+    const response = await tmdbApi.get(`/movie/${movieId}/credits`);
+    return response.data.cast; // Mengembalikan array daftar aktor
+  } catch (error) {
+    console.error(`Gagal mengambil cast film ID ${movieId}:`, error);
+    throw error;
+  }
+};
+
+// 2. Mengambil rekomendasi film serupa berdasarkan ID Film
+export const getMovieRecommendations = async (movieId: string | number): Promise<Movie[]> => {
+  try {
+    const response = await tmdbApi.get(`/movie/${movieId}/recommendations`);
+    return response.data.results; // Mengembalikan array film serupa
+  } catch (error) {
+    console.error(`Gagal mengambil rekomendasi film ID ${movieId}:`, error);
+    throw error;
+  }
+};
+
+// 3. 🛠️ FUNGSI BARU: Mengambil video (Trailer/Teaser YouTube) berdasarkan ID Film
+export const getMovieVideos = async (movieId: string | number): Promise<any[]> => {
+  try {
+    const response = await tmdbApi.get(`/movie/${movieId}/videos`, {
+      params: {
+        // Jangan gunakan id-ID saja karena TMDB sering kali tidak punya trailer bahasa Indonesia.
+        // Kita bypass default language dengan en-US khusus untuk request video agar trailer YouTube pasti ketemu.
+        language: 'en-US' 
+      }
+    });
+    return response.data.results; // Mengembalikan array daftar video dari YouTube
+  } catch (error) {
+    console.error(`Gagal mengambil video trailer film ID ${movieId}:`, error);
     throw error;
   }
 };

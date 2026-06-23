@@ -2,88 +2,77 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
+  FlatList,
+  Dimensions,
+  Platform // 🛠️ Cek web/HP
 } from 'react-native';
-
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { getMovieDetails, getMovieCredits, getMovieRecommendations, getMovieVideos, Movie } from '../src/services/tmdbApi';
 
-// @ts-ignore
-import { getMovieDetails } from '../src/services/tmdbApi';
-// @ts-ignore
-import { addMovieToFavorites } from '../src/services/firebaseService';
-// @ts-ignore
-import { useAuth } from '../src/hooks/useAuth';
+const { width } = Dimensions.get('window');
+
+// 🛠️ IMPORT SECARA DINAMIS: Hanya load library jika dijalankan di HP asli (Android/iOS)
+const YoutubePlayer = Platform.OS !== 'web' ? require('react-native-youtube-iframe').default : null;
 
 export default function DetailScreen() {
+  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { id } = useLocalSearchParams(); 
-  
-  // Mengubah tipe menjadi 'any' agar TypeScript mengizinkan pemanggilan .user
-  const authContext = useAuth() as any; 
-  const user = authContext?.user; 
 
-  const [movie, setMovie] = useState<any>(null);
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [cast, setCast] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Movie[]>([]);
+  const [trailerId, setTrailerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchDetails = async () => {
-      if (!id) return;
+    if (!id) return;
+
+    const fetchAllDetailData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getMovieDetails(id as string);
-        setMovie(data);
+
+        const [detailData, creditsData, recommendationsData, videosData] = await Promise.all([
+          getMovieDetails(id as string),
+          getMovieCredits(id as string),
+          getMovieRecommendations(id as string),
+          getMovieVideos(id as string),
+        ]);
+
+        setMovie(detailData);
+        setCast(creditsData.slice(0, 10)); 
+        setRecommendations(recommendationsData);
+
+        const officialTrailer = videosData.find(
+          (video: any) => video.site === 'YouTube' && (video.type === 'Trailer' || video.type === 'Teaser')
+        );
+
+        if (officialTrailer) {
+          setTrailerId(officialTrailer.key);
+        } else {
+          setTrailerId(null);
+        }
       } catch (err) {
-        setError('Gagal memuat detail film.');
+        setError('Gagal memuat detail data film.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDetails();
+    fetchAllDetailData();
   }, [id]);
-
-  const handleAddToWatchlist = async () => {
-    if (!movie) return;
-
-    const userId = user?.uid || "user_praktikum_master";
-
-    try {
-      setIsSubmitting(true);
-      
-      const movieData = {
-        id: movie.id,
-        title: movie.title,
-        poster_path: movie.poster_path,
-        vote_average: movie.vote_average,
-        release_date: movie.release_date
-      };
-
-      const result = await addMovieToFavorites(userId, movieData);
-
-      if (result && result.success) {
-        Alert.alert('Berhasil', `Film "${movie.title}" masuk ke Watchlist Firebase!`);
-      } else {
-        Alert.alert('Berhasil', `Film "${movie.title}" berhasil dikirim ke database.`);
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Gagal menyambung ke Firebase.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color="#A1CEDC" />
+        <ActivityIndicator size="large" color="#FF3B30" />
       </ThemedView>
     );
   }
@@ -91,7 +80,7 @@ export default function DetailScreen() {
   if (error || !movie) {
     return (
       <ThemedView style={styles.center}>
-        <ThemedText style={styles.errorText}>{error || 'Film tidak ditemukan'}</ThemedText>
+        <ThemedText style={styles.errorText}>{error || 'Film tidak ditemukan.'}</ThemedText>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ThemedText style={styles.backButtonText}>Kembali</ThemedText>
         </TouchableOpacity>
@@ -99,63 +88,155 @@ export default function DetailScreen() {
     );
   }
 
-  const posterUrl = movie.poster_path 
+  const backdropUrl = movie.poster_path
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : 'https://via.placeholder.com/500x750.png?text=No+Image';
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Image source={{ uri: posterUrl }} style={styles.backdrop} />
-
-      <ThemedView style={styles.contentContainer}>
-        <ThemedText type="title" style={styles.title}>{movie.title}</ThemedText>
+    <ThemedView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         
-        <ThemedView style={styles.metaContainer}>
-          <ThemedText style={styles.rating}>⭐ {movie.vote_average ? movie.vote_average.toFixed(1) : '0.0'}</ThemedText>
-          <ThemedText style={styles.releaseDate}>📅 {movie.release_date}</ThemedText>
-        </ThemedView>
+        {/* POSTER / BACKDROP UTAMA */}
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: backdropUrl }} style={styles.mainPoster} resizeMode="cover" />
+          <TouchableOpacity style={styles.floatingBackButton} onPress={() => router.back()}>
+            <ThemedText style={styles.floatingBackText}>◀ Kembali</ThemedText>
+          </TouchableOpacity>
+        </View>
 
-        <ThemedView style={styles.separator} />
+        {/* INFORMASI UTAMA FILM */}
+        <View style={styles.infoWrapper}>
+          <ThemedText style={styles.titleText}>{movie.title}</ThemedText>
+          
+          <View style={styles.metaRow}>
+            <ThemedText style={styles.ratingBox}>⭐ {movie.vote_average ? movie.vote_average.toFixed(1) : '0.0'}</ThemedText>
+            <ThemedText style={styles.releaseText}>{movie.release_date || 'N/A'}</ThemedText>
+          </View>
 
-        <ThemedText type="subtitle" style={styles.sectionTitle}>Sinopsis</ThemedText>
-        <ThemedText style={styles.overview}>
-          {movie.overview || 'Sinopsis tidak tersedia untuk film ini.'}
-        </ThemedText>
-
-        <ThemedView style={styles.separator} />
-
-        <TouchableOpacity 
-          style={[styles.watchlistButton, isSubmitting && styles.disabledButton]}
-          onPress={handleAddToWatchlist}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <ThemedText style={styles.watchlistButtonText}>➕ Tambah ke Watchlist</ThemedText>
+          {/* 🛠️ PERBAIKAN: AKTIFKAN PEMUTAR ASLI DI MOBILE */}
+          {trailerId && (
+            <View style={styles.trailerContainer}>
+              <ThemedText style={styles.sectionTitle}>Official Trailer</ThemedText>
+              <View style={styles.youtubeWrapper}>
+                {Platform.OS === 'web' ? (
+                  <iframe
+                    width="100%"
+                    height="250"
+                    src={`https://www.youtube.com/embed/${trailerId}`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ borderRadius: 12, border: 'none' }}
+                  />
+                ) : (
+                  // JALANKAN PLAYER UTAMA JIKA DI HP (VIA EXPO GO / TUNNEL)
+                  YoutubePlayer && (
+                    <YoutubePlayer
+                      height={220}
+                      videoId={trailerId}
+                      play={false}
+                    />
+                  )
+                )}
+              </View>
+            </View>
           )}
-        </TouchableOpacity>
-      </ThemedView>
-    </ScrollView>
+
+          {/* SINOPSIS */}
+          <ThemedText style={styles.sectionTitle}>Sinopsis</ThemedText>
+          <ThemedText style={styles.overviewText}>
+            {movie.overview || 'Sinopsis tidak tersedia dalam bahasa Indonesia.'}
+          </ThemedText>
+
+          {/* 👥 LIST PEMAIN / CAST (HORIZONTAL SCROLL) */}
+          {cast.length > 0 && (
+            <View style={styles.sectionContainer}>
+              <ThemedText style={styles.sectionTitle}>Pemain Utama</ThemedText>
+              <FlatList
+                data={cast}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                  const avatarUrl = item.profile_path
+                    ? `https://image.tmdb.org/t/p/w185${item.profile_path}`
+                    : 'https://via.placeholder.com/185x278.png?text=No+Photo';
+                  return (
+                    <View style={styles.castCard}>
+                      <Image source={{ uri: avatarUrl }} style={styles.castImage} />
+                      <ThemedText numberOfLines={1} style={styles.castName}>{item.name}</ThemedText>
+                      <ThemedText numberOfLines={1} style={styles.castCharacter}>as {item.character}</ThemedText>
+                    </View>
+                  );
+                }}
+              />
+            </View>
+          )}
+
+          {/* 🎬 REKOMENDASI FILM SERUPA (HORIZONTAL SCROLL) */}
+          {recommendations.length > 0 && (
+            <View style={styles.sectionContainer}>
+              <ThemedText style={styles.sectionTitle}>Rekomendasi Serupa</ThemedText>
+              <FlatList
+                data={recommendations}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                  const moviePoster = item.poster_path
+                    ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
+                    : 'https://via.placeholder.com/185x278.png?text=No+Image';
+                  return (
+                    <TouchableOpacity 
+                      style={styles.recCard}
+                      onPress={() => router.push({ pathname: '/detail', params: { id: item.id } })}
+                    >
+                      <Image source={{ uri: moviePoster }} style={styles.recImage} />
+                      <ThemedText numberOfLines={1} style={styles.recTitle}>{item.title}</ThemedText>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+          )}
+
+        </View>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  backdrop: { width: '100%', height: 380, resizeMode: 'cover' },
-  contentContainer: { padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20, marginTop: -20, minHeight: 400 },
-  title: { fontSize: 24, marginBottom: 10 },
-  metaContainer: { flexDirection: 'row', gap: 15, marginBottom: 15, backgroundColor: 'transparent' },
-  rating: { fontSize: 16, color: '#e67e22', fontWeight: 'bold' },
-  releaseDate: { fontSize: 16, color: '#888' },
-  separator: { height: 1, backgroundColor: 'rgba(128, 128, 128, 0.2)', marginVertical: 15 },
-  sectionTitle: { fontSize: 18, marginBottom: 8 },
-  overview: { fontSize: 15, lineHeight: 22, color: '#666' },
-  watchlistButton: { backgroundColor: '#A1CEDC', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 10, marginBottom: 30 },
-  disabledButton: { backgroundColor: '#ccc' },
-  watchlistButtonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
-  errorText: { color: 'red', marginBottom: 15 },
-  backButton: { backgroundColor: '#A1CEDC', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  backButtonText: { color: '#000', fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: '#121212' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' },
+  errorText: { color: '#ff4d4d', fontSize: 16, marginBottom: 15, textAlign: 'center' },
+  imageContainer: { width: '100%', height: 400, backgroundColor: '#222', position: 'relative' },
+  mainPoster: { width: '100%', height: '100%' },
+  floatingBackButton: { position: 'absolute', top: 50, left: 20, backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: '#333' },
+  floatingBackText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  backButton: { backgroundColor: '#FF3B30', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
+  backButtonText: { color: '#fff', fontWeight: 'bold' },
+  
+  infoWrapper: { padding: 20 },
+  titleText: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 20 },
+  ratingBox: { backgroundColor: '#FFCC00', color: '#000', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, fontWeight: 'bold', fontSize: 14 },
+  releaseText: { color: '#aaa', fontSize: 14 },
+  
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginTop: 15, marginBottom: 10 },
+  overviewText: { fontSize: 15, color: '#ccc', lineHeight: 22, textAlign: 'justify' },
+  
+  trailerContainer: { marginBottom: 10 },
+  youtubeWrapper: { borderRadius: 12, overflow: 'hidden', backgroundColor: '#000', marginTop: 5 },
+
+  sectionContainer: { marginTop: 20 },
+  
+  castCard: { width: 90, marginRight: 12, alignItems: 'center' },
+  castImage: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#333', marginBottom: 6, borderWidth: 1, borderColor: '#444' },
+  castName: { color: '#fff', fontSize: 12, fontWeight: 'bold', textAlign: 'center', width: '100%' },
+  castCharacter: { color: '#777', fontSize: 10, textAlign: 'center', width: '100%' },
+  
+  recCard: { width: 110, marginRight: 12 },
+  recImage: { width: 110, height: 160, borderRadius: 10, backgroundColor: '#333', marginBottom: 6 },
+  recTitle: { color: '#ccc', fontSize: 12, fontWeight: '600', paddingHorizontal: 2 }
 });

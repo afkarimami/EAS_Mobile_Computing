@@ -1,17 +1,27 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+// @ts-ignore
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useContext } from 'react';
 import { Alert, FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+// 🛠️ IMPORT AUTHCONTEXT UNTUK MEMBACA DATA AKUN LOGIN
+// @ts-ignore
+import { AuthContext } from '../../src/context/AuthContext';
 
 export default function WatchlistScreen() {
   const router = useRouter();
+  const { user } = useContext(AuthContext) as any; // Mengambil data user yang sedang login
   const [watchlistMovies, setWatchlistMovies] = useState<any[]>([]);
+
+  // Mengenerate key unik berdasarkan email user
+  const getUserKey = () => user?.email ? `user_watchlist_${user.email}` : 'user_watchlist_guest';
 
   const loadWatchlistData = async () => {
     try {
-      const storedData = await AsyncStorage.getItem('user_watchlist');
+      const userKey = getUserKey();
+      const storedData = await AsyncStorage.getItem(userKey);
       if (storedData) {
         setWatchlistMovies(JSON.parse(storedData));
       } else {
@@ -25,14 +35,17 @@ export default function WatchlistScreen() {
   useFocusEffect(
     useCallback(() => {
       loadWatchlistData();
-    }, [])
+    }, [user]) // Memicu ulang jika user login berubah
   );
 
   const handleRemoveWatchlist = async (id: number) => {
     try {
+      const userKey = getUserKey();
       const updatedList = watchlistMovies.filter(movie => movie.id !== id);
       setWatchlistMovies(updatedList);
-      await AsyncStorage.setItem('user_watchlist', JSON.stringify(updatedList));
+      
+      // Simpan kembali ke penyimpanan akun yang sesuai
+      await AsyncStorage.setItem(userKey, JSON.stringify(updatedList));
       Alert.alert('Dihapus', 'Film berhasil dikeluarkan dari Watchlist.');
     } catch (err) {
       Alert.alert('Error', 'Gagal menghapus film.');
@@ -101,17 +114,20 @@ export default function WatchlistScreen() {
             onPress={() => router.push('/')}
             activeOpacity={0.7}
           >
-            <ThemedText style={styles.backButtonText}>⬅  Home</ThemedText>
+            <ThemedText style={styles.backButtonText}>⬅   Home</ThemedText>
           </TouchableOpacity>
-          {/* 🛠️ DIUBAH: Judul Header Page */}
-          <ThemedText style={styles.titlePage}>My Watchlist</ThemedText>
+          
+          <View style={styles.titleWrapper}>
+            <ThemedText style={styles.titlePage}>My Watchlist</ThemedText>
+            {/* Menampilkan email pemilik akun aktif di bawah judul */}
+            <ThemedText style={styles.userEmailText}>{user?.email || 'user_master'}</ThemedText>
+          </View>
         </View>
 
         {/* KONDISI REAL TIME JIKA WATCHLIST KOSONG */}
         {watchlistMovies.length === 0 ? (
           <View style={styles.emptyContainer}>
             <ThemedText style={styles.emptyIcon}></ThemedText>
-            {/* 🛠️ DIUBAH: Pesan teks kosong */}
             <ThemedText style={styles.emptyText}>Watchlist kamu kosong. Cari dan tambahkan beberapa film kesukaanmu</ThemedText>
             <TouchableOpacity 
               style={styles.exploreButton}
@@ -141,7 +157,9 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 20, height: 50 },
   backButton: { backgroundColor: '#1A1A1A', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 25, borderWidth: 1, borderColor: '#333' },
   backButtonText: { color: '#E0E0E0', fontSize: 14, fontWeight: '700' },
+  titleWrapper: { alignItems: 'flex-end' },
   titlePage: { fontSize: 20, fontWeight: 'bold', color: '#FF3B30' },
+  userEmailText: { fontSize: 11, color: '#888', marginTop: 2 },
   listContainer: { paddingHorizontal: 20, paddingBottom: 30 },
   card: { flexDirection: 'row', marginBottom: 16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#141414', borderWidth: 1, borderColor: '#222' },
   poster: { width: 95, height: 145, backgroundColor: '#2A2A2A' },

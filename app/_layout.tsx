@@ -1,8 +1,14 @@
+// 1. Ambil LogBox & Platform di paling atas dan langsung matikan LogBox jika di Web
+import { LogBox, Platform, ActivityIndicator, View } from 'react-native';
+if (Platform.OS === 'web') {
+  LogBox.ignoreAllLogs(true);
+}
+
+// 2. Import library pendukung lainnya (Tanpa ada yang kembar/duplikat lagi)
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useContext, useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -22,7 +28,7 @@ function NavigationGate() {
   useEffect(() => {
     if (loading) return;
 
-    // 1. KUNCI PERBAIKAN: Gabungkan deteksi semua halaman Autentikasi (Login & Register)
+    // KUNCI PERBAIKAN: Gabungkan deteksi semua halaman Autentikasi (Login & Register)
     const isAuthScreen = segments[0] === 'login' || segments[0] === 'register';
 
     if (!user && !isAuthScreen) {
