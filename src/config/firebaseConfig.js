@@ -6,10 +6,10 @@ import { getFirestore } from "firebase/firestore";
 
 // Salin kode dari gambar Anda ke sini
 const firebaseConfig = {
-  apiKey: "AIzaSyDwnzUa1rcDyvDdjkxrv8-kaVRnt7luS6g",
+  apiKey: "AIzaSyDwnzUa1rcDyvDdjkxrv8-kaVRntZLuS6g",
   authDomain: "eas-mobile-computing.firebaseapp.com",
   projectId: "eas-mobile-computing",
-  storageBucket: "eas-mobile-computing.appspot.com",
+  storageBucket: "eas-mobile-computing.firebasestorage.app",
   messagingSenderId: "989231140668",
   appId: "1:989231140668:web:25b7baa98007f37832d839"
 };

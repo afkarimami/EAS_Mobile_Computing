@@ -1,5 +1,6 @@
+// app/login.tsx
 import { useRouter } from 'expo-router';
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -10,39 +11,56 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-// @ts-ignore --- Hubungkan ke AuthContext milik temanmu
-import { AuthContext } from '../src/context/AuthContext';
+// Impor langsung fungsi backend Firebase buatan Anda
+import { loginUser, registerUser } from '../src/services/firebaseService';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useContext(AuthContext) as any;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // 1. TAMBAHKAN STATE INI: false = Mode Login, true = Mode Daftar
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
 
-  const handleLogin = async () => {
+  // 2. MODIFIKASI FUNGSI EKSEKUSI UTAMA
+  const handleAuth = async () => {
     if (email.trim() === '' || password.trim() === '') {
       Alert.alert('Error', 'Email dan Password tidak boleh kosong!');
       return;
     }
 
     try {
-      setLoading(false);
       setLoading(true);
-      // Memanggil fungsi login Firebase milik temanmu
-      await login(email, password);
       
-      Alert.alert('Berhasil', 'Selamat datang di CineTracker!');
-      router.replace('/(tabs)'); // Lempar ke halaman utama film setelah login sukses
+      if (isRegisterMode) {
+        // --- JALUR LOGIKA REGISTER ---
+        await registerUser(email, password);
+        Alert.alert('Berhasil', 'Akun berhasil didaftarkan! Silakan masuk.');
+        setIsRegisterMode(false); // Setelah daftar sukses, balikkan ke mode login
+        setPassword(''); // Reset password input
+      } else {
+        // --- JALUR LOGIKA LOGIN ---
+        await loginUser(email, password);
+        Alert.alert('Berhasil', 'Selamat datang di CineTracker!');
+        router.replace('/(tabs)'); // Masuk ke halaman utama
+      }
     } catch (error: any) {
-      let errorMessage = 'Gagal login. Periksa kembali akun Anda.';
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      let errorMessage = 'Terjadi kesalahan. Periksa kembali data Anda.';
+      
+      // Menangani pesan error Firebase agar lebih mudah dibaca user
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'Email atau password salah.';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Format email tidak valid.';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Email ini sudah terdaftar. Silakan gunakan email lain.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
       }
-      Alert.alert('Login Gagal', errorMessage);
+      
+      Alert.alert(isRegisterMode ? 'Pendaftaran Gagal' : 'Login Gagal', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -52,7 +70,10 @@ export default function LoginScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.headerContainer}>
         <ThemedText type="title" style={styles.logoTitle}>🍿 CineTracker</ThemedText>
-        <ThemedText type="subtitle">Masuk untuk menyimpan film favoritmu</ThemedText>
+        {/* 3. SUBTITLE DINAMIS MENYESUAIKAN MODE */}
+        <ThemedText type="subtitle">
+          {isRegisterMode ? "Daftar akun baru untuk film favoritmu" : "Masuk untuk menyimpan film favoritmu"}
+        </ThemedText>
       </ThemedView>
 
       <ThemedView style={styles.formContainer}>
@@ -76,16 +97,30 @@ export default function LoginScreen() {
           autoCapitalize="none"
         />
 
+        {/* 4. TOMBOL UTAMA MENJALANKAN handleAuth */}
         <TouchableOpacity 
           style={[styles.button, loading && styles.disabledButton]} 
-          onPress={handleLogin}
+          onPress={handleAuth}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
-            <ThemedText style={styles.buttonText}>Masuk</ThemedText>
+            <ThemedText style={styles.buttonText}>
+              {isRegisterMode ? "Daftar Akun" : "Masuk"}
+            </ThemedText>
           )}
+        </TouchableOpacity>
+
+        {/* 5. TAMBAHKAN TOMBOL TOGGLE DI PALING BAWAH */}
+        <TouchableOpacity 
+          style={styles.toggleButton} 
+          onPress={() => setIsRegisterMode(!isRegisterMode)}
+          disabled={loading}
+        >
+          <ThemedText style={styles.toggleText}>
+            {isRegisterMode ? "Sudah punya akun? Masuk di sini" : "Belum punya akun? Daftar di sini"}
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ThemedView>
@@ -117,4 +152,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: { backgroundColor: '#ccc' },
   buttonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
+  // Style tambahan untuk tombol penukar mode
+  toggleButton: { marginTop: 15, alignItems: 'center' },
+  toggleText: { color: '#A1CEDC', fontSize: 14, fontWeight: '600' }
 });

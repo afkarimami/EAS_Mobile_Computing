@@ -22,15 +22,14 @@ function NavigationGate() {
   useEffect(() => {
     if (loading) return;
 
-    // Cek apakah user sedang berada di dalam grup halaman utama (tabs)
-    const inTabsGroup = segments[0] === '(tabs)';
+    // 1. PERBAIKAN LOGIKA GATE: Cek apakah user sedang di halaman login
+    const isLoginScreen = segments[0] === 'login';
 
-    if (!user && inTabsGroup) {
-      // Jika BELUM login dan mencoba buka halaman utama, lempar ke halaman login
-      // Sesuaikan path '/login' jika temanmu menaruh file loginnya di tempat lain (misal: 'app/login.tsx')
-      router.replace('/login' as any); 
-    } else if (user && !inTabsGroup) {
-      // Jika SUDAH login tapi terdampar di luar, kembalikan ke halaman utama
+    if (!user && !isLoginScreen) {
+      // Jika BELUM login dan mencoba buka halaman apa pun selain login, paksa ke halaman login
+      router.replace('/login'); 
+    } else if (user && isLoginScreen) {
+      // Jika SUDAH login tetapi malah membuka halaman login, kembalikan ke halaman utama
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
@@ -46,9 +45,19 @@ function NavigationGate() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      {/* Daftarkan halaman login temanmu di sini jika dibutuhkan */}
       <Stack.Screen name="login" options={{ headerShown: false, title: 'Login' }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      
+      {/* 2. DAFTARKAN HALAMAN DETAIL DI SINI (SEJAJAR DENGAN LOGIN & TABS) */}
+      <Stack.Screen 
+        name="detail" 
+        options={{ 
+          title: 'Detail Film', 
+          headerShown: true,
+          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: '#1A1A1A' } // Warna gelap menyesuaikan tema CineTracker
+        }} 
+      />
     </Stack>
   );
 }
