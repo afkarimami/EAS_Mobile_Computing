@@ -1,12 +1,14 @@
-import React, { useState, useContext } from 'react';
-import { 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert 
-} from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useContext, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform // 🟢 1. Import Platform untuk mendeteksi Web/HP
+  ,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -22,32 +24,52 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 🟢 2. Fungsi pembantu agar Alert bisa muncul di Web maupun HP tanpa macet
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      alert(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleRegister = async () => {
+    // 🟢 3. Jejak Log untuk memastikan tombol merespons saat diklik
+    console.log('Tombol Daftar Akun berhasil dipicu!', { email, password, confirmPassword });
+
     if (email.trim() === '' || password.trim() === '' || confirmPassword.trim() === '') {
-      Alert.alert('Error', 'Semua kolom harus diisi!');
+      showAlert('Error', 'Semua kolom harus diisi!');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Password dan Konfirmasi Password tidak cocok!');
+      showAlert('Error', 'Password dan Konfirmasi Password tidak cocok!');
       return;
     }
 
     try {
       setLoading(true);
-      // Memanggil fungsi register Firebase milik temanmu
+      console.log('Mengirim data pendaftaran ke AuthContext Firebase...');
+      
+      // Memanggil fungsi register Firebase melalui Context
       await register(email, password);
       
-      Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan masuk.');
-      router.replace('/login'); // Setelah sukses daftar, lempar ke halaman login
+      console.log('Pendaftaran sukses di server Firebase!');
+      showAlert('Berhasil', 'Akun berhasil dibuat! Silakan masuk.');
+      router.replace('/login'); 
     } catch (error: any) {
+      console.error('Terjadi kesalahan saat register:', error);
+      
       let errorMessage = 'Gagal mendaftar. Silakan coba lagi.';
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'Email sudah terdaftar digunakan akun lain.';
       } else if (error.code === 'auth/weak-password') {
         errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
+      } else if (error.message) {
+        errorMessage = error.message; // Tampilkan pesan bawaan jika ada kendala konfigurasi
       }
-      Alert.alert('Pendaftaran Gagal', errorMessage);
+      
+      showAlert('Pendaftaran Gagal', errorMessage);
     } finally {
       setLoading(false);
     }

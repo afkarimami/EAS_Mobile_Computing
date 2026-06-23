@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 // Menggunakan Ionicons universal bawaan Expo, dijamin anti-error path!
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -21,17 +21,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      
-      {/* 2. Menu Explore */}
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'compass' : 'compass-outline'} size={24} color={color} />
-          ),
-        }}
-      />
+
 
       {/* 3. Menu Profile */}
       <Tabs.Screen

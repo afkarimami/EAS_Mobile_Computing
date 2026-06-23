@@ -1,8 +1,9 @@
 // src/context/AuthContext.js
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword, // Tambahkan ini untuk login
-  signOut // Tambahkan ini untuk logout
+    createUserWithEmailAndPassword, // 1. 🟢 TAMBAHKAN IMPORT INI UNTUK DAFTAR
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut
 } from 'firebase/auth';
 import React, { createContext, useEffect, useState } from 'react';
 import { auth } from '../config/firebaseConfig';
@@ -23,6 +24,11 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  // 3. 🟢 TAMBAHKAN FUNGSI REGISTER INI
+  const register = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -32,9 +38,9 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  // Masukkan fungsi login dan logout ke dalam value Provider
+  // 4. 🟢 MASUKKAN 'register' KE DALAM VALUE PROVIDER DI BAWAH INI
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

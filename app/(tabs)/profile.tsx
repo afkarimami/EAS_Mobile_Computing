@@ -1,30 +1,46 @@
-import React, { useContext } from 'react';
-import { StyleSheet, TouchableOpacity, Alert } from 'react-native';
+// app/(tabs)/profile.tsx
+import React from 'react';
+// 1. PASTIKAN 'Platform' SUDAH DI-IMPORT DI SINI
+import { StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native'; 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { auth } from '../../src/config/firebaseConfig';
 import { signOut } from 'firebase/auth';
+import { useRouter } from 'expo-router'; // Pastikan useRouter di-import
 
 export default function ProfileScreen() {
-  // Mengambil data email dari user yang sedang login di Firebase
+  const router = useRouter();
   const userEmail = auth.currentUser?.email || 'User';
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await signOut(auth);
-            // Sistem NavigationGate di _layout.tsx Anda otomatis akan melempar user kembali ke halaman /login
-          } catch (error: any) {
-            Alert.alert('Gagal', 'Gagal logout: ' + error.message);
-          }
-        },
-      },
-    ]);
+  // 2. PERBAIKAN FUNGSI LOGOUT AGAR KOMPATIBEL DENGAN WEB & HP
+  const handleLogout = async () => {
+    const executeSignOut = async () => {
+      try {
+        await signOut(auth);
+        // Paksa rute kembali ke halaman login setelah berhasil keluar
+        router.replace('/login');
+      } catch (error: any) {
+        if (Platform.OS === 'web') {
+          alert('Gagal logout: ' + error.message);
+        } else {
+          Alert.alert('Gagal', 'Gagal logout: ' + error.message);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      // Solusi untuk browser (localhost): Gunakan confirm bawaan browser
+      const confirmWeb = window.confirm('Apakah Anda yakin ingin keluar?');
+      if (confirmWeb) {
+        await executeSignOut();
+      }
+    } else {
+      // Solusi untuk HP (Android/iOS)
+      Alert.alert('Logout', 'Apakah Anda yakin ingin keluar?', [
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Keluar', style: 'destructive', onPress: executeSignOut },
+      ]);
+    }
   };
 
   return (
