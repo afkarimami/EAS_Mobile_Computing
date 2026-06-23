@@ -1,36 +1,27 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-// Menggunakan Ionicons universal bawaan Expo, dijamin anti-error path!
-import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#A1CEDC', // Warna menu saat aktif
+        // 🛠️ KUNCI UTAMA: Menyembunyikan seluruh Tab Bar bawah secara paksa
+        tabBarStyle: {
+          display: 'none',
+        },
       }}
     >
-      {/* 1. Menu Home */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
-          ),
         }}
       />
-
-
-      {/* 3. Menu Profile */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
-          ),
         }}
       />
     </Tabs>

@@ -21,6 +21,7 @@ export interface Movie {
   vote_average: number;
   overview: string;
   release_date: string;
+  genre_ids?: number[]; // Tambahan wajib untuk melacak ID genre film
   genres?: { id: number; name: string }[]; // Tambahan opsional untuk detail genre film
 }
 
@@ -48,6 +49,23 @@ export const searchMovies = async (query: string): Promise<Movie[]> => {
     return response.data.results;
   } catch (error) {
     console.error("Gagal mencari film:", error);
+    throw error;
+  }
+};
+
+// 🛠️ NEW FUNCTION: Mengambil film berdasarkan genre (discover)
+// Fungsi ini akan langsung menembak server TMDB untuk meminta 20 film penuh per genre!
+export const getMoviesByGenre = async (genreId: string | number): Promise<Movie[]> => {
+  try {
+    const response = await tmdbApi.get('/discover/movie', {
+      params: {
+        with_genres: genreId,
+        sort_by: 'popularity.desc' // Diurutkan berdasarkan film yang paling populer di genre tersebut
+      }
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error(`Gagal mengambil film untuk genre ${genreId}:`, error);
     throw error;
   }
 };

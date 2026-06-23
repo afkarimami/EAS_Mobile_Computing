@@ -1,69 +1,46 @@
-// app/login.tsx
 import { useRouter } from 'expo-router';
-import React, { useContext, useState } from 'react'; // 1. 🟢 Tambahkan useContext
+import React, { useContext, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Platform // 2. 🟢 Tambahkan Platform untuk deteksi Web
-  ,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity
+    ActivityIndicator,
+    Alert,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    Dimensions
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-// 3. 🟢 Import AuthContext kelompokmu
 // @ts-ignore
 import { AuthContext } from '../src/context/AuthContext';
 
+const { width } = Dimensions.get('window');
+
 export default function LoginScreen() {
   const router = useRouter();
-  
-  // 4. 🟢 Ambil fungsi login dari AuthContext
   const { login } = useContext(AuthContext) as any;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 5. 🟢 Fungsi pembantu agar Alert aman di Web browser (localhost)
-  const showAlert = (title: string, message: string) => {
-    if (Platform.OS === 'web') {
-      alert(`${title}: ${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
-
-  const handleAuth = async () => {
+  const handleLogin = async () => {
     if (email.trim() === '' || password.trim() === '') {
-      showAlert('Error', 'Email dan Password tidak boleh kosong!');
+      Alert.alert('Error', 'Email dan Password tidak boleh kosong!');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Mencoba melakukan login ke Firebase...');
-      
-      // 6. 🟢 EKSEKUSI LOGIN SEBENARNYA KE FIREBASE VIA CONTEXT
       await login(email, password);
-      
-      console.log('Login berhasil!');
-      showAlert('Berhasil', 'Selamat datang di CineTracker!');
+      Alert.alert('Berhasil', 'Selamat datang kembali di CineTracker!');
       router.replace('/(tabs)'); 
     } catch (error: any) {
-      console.error('Eror saat login:', error);
-      let errorMessage = 'Terjadi kesalahan. Periksa kembali data Anda.';
-      
-      // Menangani pesan error Firebase agar lebih mudah dibaca user
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      let errorMessage = 'Gagal login. Periksa kembali akun Anda.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         errorMessage = 'Email atau password salah.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Format email tidak valid.';
       }
-      
-      showAlert('Login Gagal', errorMessage);
+      Alert.alert('Login Gagal', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,81 +48,73 @@ export default function LoginScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.headerContainer}>
-        <ThemedText type="title" style={styles.logoTitle}>🍿 CineTracker</ThemedText>
-        <ThemedText type="subtitle">Masuk untuk menyimpan film favoritmu</ThemedText>
-      </ThemedView>
+      <ThemedView style={styles.cardContainer}>
+        <ThemedView style={styles.headerContainer}>
+          <ThemedText style={styles.logoTitle}>Movie<ThemedText style={styles.logoHighlight}>Licious</ThemedText></ThemedText>
+          <ThemedText style={styles.logoSubtitle}>Nonton, Catat, dan Atur Film Favoritmu</ThemedText>
+        </ThemedView>
 
-      <ThemedView style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Masukkan Email"
-          placeholderTextColor="#888"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+        <ThemedView style={styles.formContainer}>
+          <ThemedText style={styles.inputLabel}>Email</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="nama@email.com"
+            placeholderTextColor="#666"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Masukkan Password"
-          placeholderTextColor="#888"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+          <ThemedText style={styles.inputLabel}>Password</ThemedText>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#666"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.disabledButton]} 
-          onPress={handleAuth}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <ThemedText style={styles.buttonText}>Masuk</ThemedText>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.disabledButton]} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <ThemedText style={styles.buttonText}>Masuk Ke Akun</ThemedText>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          onPress={() => router.replace('/register')} 
-          style={styles.linkButton}
-        >
-          <ThemedText style={styles.linkText}>Belum punya akun? Daftar di sini</ThemedText>
-        </TouchableOpacity>
-
+          <TouchableOpacity 
+            onPress={() => router.replace('/register' as any)} 
+            style={styles.linkButton}
+          >
+            <ThemedText style={styles.linkTextText}>Belum punya akun? <ThemedText style={styles.linkHighlight}>Daftar Sekarang</ThemedText></ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
       </ThemedView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 30 },
-  headerContainer: { alignItems: 'center', marginBottom: 40, backgroundColor: 'transparent' },
-  logoTitle: { fontSize: 32, fontWeight: 'bold', marginBottom: 10 },
-  formContainer: { backgroundColor: 'transparent', gap: 15 },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#fff',
-    color: '#000',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#A1CEDC',
-    height: 50,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  disabledButton: { backgroundColor: '#ccc' },
-  buttonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
-  linkButton: { alignItems: 'center', marginTop: 15 },
-  linkText: { color: '#A1CEDC', fontSize: 14, fontWeight: '500' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212', paddingHorizontal: 20 },
+  cardContainer: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 30, width: '100%', maxWidth: 450, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  headerContainer: { alignItems: 'center', marginBottom: 35, backgroundColor: 'transparent' },
+  logoTitle: { fontSize: 36, fontWeight: '900', color: '#fff', letterSpacing: 1 },
+  logoHighlight: { color: '#FF3B30', fontSize: 36, fontWeight: '900' },
+  logoSubtitle: { fontSize: 13, color: '#aaa', marginTop: 8, textAlign: 'center' },
+  formContainer: { backgroundColor: 'transparent', gap: 8 },
+  inputLabel: { color: '#ddd', fontSize: 14, fontWeight: '600', marginTop: 10, paddingLeft: 4 },
+  input: { height: 52, borderColor: '#333', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, backgroundColor: '#2A2A2A', color: '#fff', fontSize: 16 },
+  button: { backgroundColor: '#FF3B30', height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 25, shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  disabledButton: { backgroundColor: '#555' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
+  linkButton: { alignItems: 'center', marginTop: 20 },
+  linkTextText: { color: '#aaa', fontSize: 14 },
+  linkHighlight: { color: '#FF3B30', fontWeight: 'bold' }
 });

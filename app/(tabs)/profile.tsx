@@ -1,82 +1,161 @@
-// app/(tabs)/profile.tsx
-import React from 'react';
-// 1. PASTIKAN 'Platform' SUDAH DI-IMPORT DI SINI
-import { StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native'; 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { auth } from '../../src/config/firebaseConfig';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'expo-router'; // Pastikan useRouter di-import
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Alert, FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-export default function ProfileScreen() {
+export default function WatchlistScreen() {
   const router = useRouter();
-  const userEmail = auth.currentUser?.email || 'User';
+  const [watchlistMovies, setWatchlistMovies] = useState<any[]>([]);
 
-  // 2. PERBAIKAN FUNGSI LOGOUT AGAR KOMPATIBEL DENGAN WEB & HP
-  const handleLogout = async () => {
-    const executeSignOut = async () => {
-      try {
-        await signOut(auth);
-        // Paksa rute kembali ke halaman login setelah berhasil keluar
-        router.replace('/login');
-      } catch (error: any) {
-        if (Platform.OS === 'web') {
-          alert('Gagal logout: ' + error.message);
-        } else {
-          Alert.alert('Gagal', 'Gagal logout: ' + error.message);
-        }
+  const loadWatchlistData = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem('user_watchlist');
+      if (storedData) {
+        setWatchlistMovies(JSON.parse(storedData));
+      } else {
+        setWatchlistMovies([]);
       }
-    };
-
-    if (Platform.OS === 'web') {
-      // Solusi untuk browser (localhost): Gunakan confirm bawaan browser
-      const confirmWeb = window.confirm('Apakah Anda yakin ingin keluar?');
-      if (confirmWeb) {
-        await executeSignOut();
-      }
-    } else {
-      // Solusi untuk HP (Android/iOS)
-      Alert.alert('Logout', 'Apakah Anda yakin ingin keluar?', [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Keluar', style: 'destructive', onPress: executeSignOut },
-      ]);
+    } catch (err) {
+      console.log('Gagal memuat data watchlist lokal.');
     }
   };
 
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.profileHeader}>
-        <ThemedText style={styles.avatar}>👤</ThemedText>
-        <ThemedText type="title" style={styles.emailText}>{userEmail}</ThemedText>
-        <ThemedText type="subtitle" style={styles.roleText}>Anggota CineTracker</ThemedText>
-      </ThemedView>
+  useFocusEffect(
+    useCallback(() => {
+      loadWatchlistData();
+    }, [])
+  );
 
-      <ThemedView style={styles.settingsContainer}>
-        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Pengaturan Akun</ThemedText>
+  const handleRemoveWatchlist = async (id: number) => {
+    try {
+      const updatedList = watchlistMovies.filter(movie => movie.id !== id);
+      setWatchlistMovies(updatedList);
+      await AsyncStorage.setItem('user_watchlist', JSON.stringify(updatedList));
+      Alert.alert('Dihapus', 'Film berhasil dikeluarkan dari Watchlist.');
+    } catch (err) {
+      Alert.alert('Error', 'Gagal menghapus film.');
+    }
+  };
+
+  const renderMovieCard = ({ item }: { item: any }) => {
+    const posterUrl = item.poster_path 
+      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+      : 'https://via.placeholder.com/500x750.png?text=No+Image';
+
+    return (
+      <TouchableOpacity 
+        style={styles.card}
+        activeOpacity={0.8}
+        onPress={() => {
+          router.push({
+            pathname: '/detail', 
+            params: { 
+              id: item.id,
+              title: item.title,
+              poster_path: item.poster_path,
+              vote_average: item.vote_average ? item.vote_average.toString() : '0.0',
+              release_date: item.release_date
+            }
+          });
+        }}
+      >
+        <Image source={{ uri: posterUrl }} style={styles.poster} />
+        <View style={styles.infoContainer}>
+          <View>
+            <ThemedText numberOfLines={2} style={styles.movieTitle}>
+              {item.title}
+            </ThemedText>
+            <View style={styles.ratingContainer}>
+              <ThemedText style={styles.starIcon}>⭐</ThemedText>
+              <ThemedText style={styles.ratingText}>
+                {item.vote_average ? Number(item.vote_average).toFixed(1) : '0.0'}
+              </ThemedText>
+            </View>
+            <ThemedText style={styles.releaseDate}>Release: {item.release_date || 'N/A'}</ThemedText>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.removeButton}
+            onPress={(e) => {
+              e.stopPropagation(); 
+              handleRemoveWatchlist(item.id);
+            }}
+          >
+            <ThemedText style={styles.removeButtonText}>Hapus</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <ThemedView style={styles.outerContainer}>
+      <View style={styles.innerContent}>
         
-        <TouchableOpacity style={styles.buttonLogout} onPress={handleLogout}>
-          <ThemedText style={styles.buttonLogoutText}>Keluar dari Akun</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+        {/* HEADER BAR */}
+        <View style={styles.topBar}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => router.push('/')}
+            activeOpacity={0.7}
+          >
+            <ThemedText style={styles.backButtonText}>⬅  Home</ThemedText>
+          </TouchableOpacity>
+          {/* 🛠️ DIUBAH: Judul Header Page */}
+          <ThemedText style={styles.titlePage}>My Watchlist</ThemedText>
+        </View>
+
+        {/* KONDISI REAL TIME JIKA WATCHLIST KOSONG */}
+        {watchlistMovies.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyIcon}></ThemedText>
+            {/* 🛠️ DIUBAH: Pesan teks kosong */}
+            <ThemedText style={styles.emptyText}>Watchlist kamu kosong. Cari dan tambahkan beberapa film kesukaanmu</ThemedText>
+            <TouchableOpacity 
+              style={styles.exploreButton}
+              onPress={() => router.push('/')}
+            >
+              <ThemedText style={styles.exploreButtonText}>Cari Film Sekarang</ThemedText>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={watchlistMovies}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderMovieCard}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+      </View>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 30, justifyContent: 'center' },
-  profileHeader: { alignItems: 'center', marginBottom: 40, backgroundColor: 'transparent' },
-  avatar: { fontSize: 80, marginBottom: 15 },
-  emailText: { fontSize: 22, fontWeight: 'bold' },
-  roleText: { fontSize: 14, color: '#888', marginTop: 5 },
-  settingsContainer: { backgroundColor: 'transparent', width: '100%' },
-  sectionTitle: { fontSize: 16, marginBottom: 15, color: '#ccc' },
-  buttonLogout: {
-    backgroundColor: '#FF6B6B',
-    height: 50,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonLogoutText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  outerContainer: { flex: 1, backgroundColor: '#0A0A0A', alignItems: 'center', paddingTop: 40 },
+  innerContent: { width: '100%', maxWidth: 500, flex: 1 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 20, height: 50 },
+  backButton: { backgroundColor: '#1A1A1A', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 25, borderWidth: 1, borderColor: '#333' },
+  backButtonText: { color: '#E0E0E0', fontSize: 14, fontWeight: '700' },
+  titlePage: { fontSize: 20, fontWeight: 'bold', color: '#FF3B30' },
+  listContainer: { paddingHorizontal: 20, paddingBottom: 30 },
+  card: { flexDirection: 'row', marginBottom: 16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#141414', borderWidth: 1, borderColor: '#222' },
+  poster: { width: 95, height: 145, backgroundColor: '#2A2A2A' },
+  infoContainer: { flex: 1, padding: 14, justifyContent: 'space-between' },
+  movieTitle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  ratingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  starIcon: { fontSize: 14, marginRight: 4 },
+  ratingText: { fontSize: 14, fontWeight: '600', color: '#FFCC00' },
+  releaseDate: { fontSize: 12, color: '#777', marginTop: 2 },
+  removeButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255, 59, 48, 0.15)', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, marginTop: 8 },
+  removeButtonText: { color: '#FF3B30', fontSize: 12, fontWeight: 'bold' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
+  emptyIcon: { fontSize: 64, marginBottom: 16, textAlign: 'center' },
+  emptyText: { color: '#aaa', fontSize: 15, textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  exploreButton: { backgroundColor: '#FF3B30', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 25 },
+  exploreButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 }
 });
