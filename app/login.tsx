@@ -2,17 +2,16 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 // Impor langsung fungsi backend Firebase buatan Anda
-import { loginUser, registerUser } from '../src/services/firebaseService';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,18 +33,8 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       
-      if (isRegisterMode) {
-        // --- JALUR LOGIKA REGISTER ---
-        await registerUser(email, password);
-        Alert.alert('Berhasil', 'Akun berhasil didaftarkan! Silakan masuk.');
-        setIsRegisterMode(false); // Setelah daftar sukses, balikkan ke mode login
-        setPassword(''); // Reset password input
-      } else {
-        // --- JALUR LOGIKA LOGIN ---
-        await loginUser(email, password);
-        Alert.alert('Berhasil', 'Selamat datang di CineTracker!');
-        router.replace('/(tabs)'); // Masuk ke halaman utama
-      }
+      Alert.alert('Berhasil', 'Selamat datang di CineTracker!');
+      router.replace('/(tabs)'); 
     } catch (error: any) {
       let errorMessage = 'Terjadi kesalahan. Periksa kembali data Anda.';
       
@@ -112,16 +101,14 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        {/* 5. TAMBAHKAN TOMBOL TOGGLE DI PALING BAWAH */}
+        {/* 🛠️ PERUBAHAN BARU: Tombol untuk pindah ke halaman Register */}
         <TouchableOpacity 
-          style={styles.toggleButton} 
-          onPress={() => setIsRegisterMode(!isRegisterMode)}
-          disabled={loading}
+          onPress={() => router.replace('/register' as any)} 
+          style={styles.linkButton}
         >
-          <ThemedText style={styles.toggleText}>
-            {isRegisterMode ? "Sudah punya akun? Masuk di sini" : "Belum punya akun? Daftar di sini"}
-          </ThemedText>
+          <ThemedText style={styles.linkText}>Belum punya akun? Daftar di sini</ThemedText>
         </TouchableOpacity>
+
       </ThemedView>
     </ThemedView>
   );
@@ -152,7 +139,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: { backgroundColor: '#ccc' },
   buttonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
-  // Style tambahan untuk tombol penukar mode
-  toggleButton: { marginTop: 15, alignItems: 'center' },
-  toggleText: { color: '#A1CEDC', fontSize: 14, fontWeight: '600' }
+  // Stylings tambahan untuk teks link register
+  linkButton: { alignItems: 'center', marginTop: 15 },
+  linkText: { color: '#A1CEDC', fontSize: 14, fontWeight: '500' },
 });

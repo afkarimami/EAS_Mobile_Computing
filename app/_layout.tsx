@@ -25,11 +25,11 @@ function NavigationGate() {
     // 1. PERBAIKAN LOGIKA GATE: Cek apakah user sedang di halaman login
     const isLoginScreen = segments[0] === 'login';
 
-    if (!user && !isLoginScreen) {
-      // Jika BELUM login dan mencoba buka halaman apa pun selain login, paksa ke halaman login
-      router.replace('/login'); 
-    } else if (user && isLoginScreen) {
-      // Jika SUDAH login tetapi malah membuka halaman login, kembalikan ke halaman utama
+    if (!user && inTabsGroup) {
+      // 🛠️ PERUBAHAN 1: Diubah ke '/register' agar halaman daftar yang mengunci di awal aplikasi
+      router.replace('/register' as any); 
+    } else if (user && !inTabsGroup) {
+      // Jika SUDAH login tapi terdampar di luar, kembalikan ke halaman utama (tabs)
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
@@ -46,6 +46,10 @@ function NavigationGate() {
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false, title: 'Login' }} />
+      
+      {/* 🛠️ PERUBAHAN 2: Mendaftarkan file register baru ke dalam sistem navigasi Expo Stack */}
+      <Stack.Screen name="register" options={{ headerShown: false, title: 'Register' }} />
+      
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       
       {/* 2. DAFTARKAN HALAMAN DETAIL DI SINI (SEJAJAR DENGAN LOGIN & TABS) */}
