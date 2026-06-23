@@ -9,16 +9,15 @@ import {
   View,
   FlatList,
   Dimensions,
-  Platform // 🛠️ Cek web/HP
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getMovieDetails, getMovieCredits, getMovieRecommendations, getMovieVideos, Movie } from '../src/services/tmdbApi';
 
-const { width } = Dimensions.get('window');
+// 🛠️ Hubungkan komponen trailer pintar kita
+import MovieTrailer from './MovieTrailer'; 
 
-// 🛠️ IMPORT SECARA DINAMIS: Hanya load library jika dijalankan di HP asli (Android/iOS)
-const YoutubePlayer = Platform.OS !== 'web' ? require('react-native-youtube-iframe').default : null;
+const { width } = Dimensions.get('window');
 
 export default function DetailScreen() {
   const { id } = useLocalSearchParams();
@@ -113,31 +112,12 @@ export default function DetailScreen() {
             <ThemedText style={styles.releaseText}>{movie.release_date || 'N/A'}</ThemedText>
           </View>
 
-          {/* 🛠️ PERBAIKAN: AKTIFKAN PEMUTAR ASLI DI MOBILE */}
+          {/* 🛠️ TRAILER AMAN UNTUK SEMUA PLATFORM */}
           {trailerId && (
             <View style={styles.trailerContainer}>
               <ThemedText style={styles.sectionTitle}>Official Trailer</ThemedText>
               <View style={styles.youtubeWrapper}>
-                {Platform.OS === 'web' ? (
-                  <iframe
-                    width="100%"
-                    height="250"
-                    src={`https://www.youtube.com/embed/${trailerId}`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    style={{ borderRadius: 12, border: 'none' }}
-                  />
-                ) : (
-                  // JALANKAN PLAYER UTAMA JIKA DI HP (VIA EXPO GO / TUNNEL)
-                  YoutubePlayer && (
-                    <YoutubePlayer
-                      height={220}
-                      videoId={trailerId}
-                      play={false}
-                    />
-                  )
-                )}
+                <MovieTrailer videoId={trailerId} />
               </View>
             </View>
           )}
@@ -148,7 +128,7 @@ export default function DetailScreen() {
             {movie.overview || 'Sinopsis tidak tersedia dalam bahasa Indonesia.'}
           </ThemedText>
 
-          {/* 👥 LIST PEMAIN / CAST (HORIZONTAL SCROLL) */}
+          {/* LIST PEMAIN */}
           {cast.length > 0 && (
             <View style={styles.sectionContainer}>
               <ThemedText style={styles.sectionTitle}>Pemain Utama</ThemedText>
@@ -173,7 +153,7 @@ export default function DetailScreen() {
             </View>
           )}
 
-          {/* 🎬 REKOMENDASI FILM SERUPA (HORIZONTAL SCROLL) */}
+          {/* REKOMENDASI FILM */}
           {recommendations.length > 0 && (
             <View style={styles.sectionContainer}>
               <ThemedText style={styles.sectionTitle}>Rekomendasi Serupa</ThemedText>
@@ -216,26 +196,20 @@ const styles = StyleSheet.create({
   floatingBackText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
   backButton: { backgroundColor: '#FF3B30', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
   backButtonText: { color: '#fff', fontWeight: 'bold' },
-  
   infoWrapper: { padding: 20 },
   titleText: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 20 },
   ratingBox: { backgroundColor: '#FFCC00', color: '#000', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, fontWeight: 'bold', fontSize: 14 },
   releaseText: { color: '#aaa', fontSize: 14 },
-  
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginTop: 15, marginBottom: 10 },
   overviewText: { fontSize: 15, color: '#ccc', lineHeight: 22, textAlign: 'justify' },
-  
   trailerContainer: { marginBottom: 10 },
   youtubeWrapper: { borderRadius: 12, overflow: 'hidden', backgroundColor: '#000', marginTop: 5 },
-
   sectionContainer: { marginTop: 20 },
-  
   castCard: { width: 90, marginRight: 12, alignItems: 'center' },
   castImage: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#333', marginBottom: 6, borderWidth: 1, borderColor: '#444' },
   castName: { color: '#fff', fontSize: 12, fontWeight: 'bold', textAlign: 'center', width: '100%' },
   castCharacter: { color: '#777', fontSize: 10, textAlign: 'center', width: '100%' },
-  
   recCard: { width: 110, marginRight: 12 },
   recImage: { width: 110, height: 160, borderRadius: 10, backgroundColor: '#333', marginBottom: 6 },
   recTitle: { color: '#ccc', fontSize: 12, fontWeight: '600', paddingHorizontal: 2 }
