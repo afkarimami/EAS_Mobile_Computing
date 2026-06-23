@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  FlatList, 
-  Image, 
-  TextInput, 
-  ActivityIndicator, 
-  TouchableOpacity 
-} from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity
+} from 'react-native';
 
 // Menggunakan komponen bawaan template proyekmu agar tema warna konsisten
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { getPopularMovies, searchMovies, Movie } from '../src/services/tmdbApi'; // Sesuaikan path jika letak folder src berbeda
+
+// @ts-ignore --- Path disesuaikan naik 2 tingkat (../../) karena file ini berada di dalam app/(tabs)
+import { getPopularMovies, Movie, searchMovies } from '../../src/services/tmdbApi';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -80,7 +82,7 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold" numberOfLines={2} style={styles.movieTitle}>
             {item.title}
           </ThemedText>
-          <ThemedText style={styles.rating}>⭐ {item.vote_average.toFixed(1)}</ThemedText>
+          <ThemedText style={styles.rating}>⭐ {item.vote_average ? item.vote_average.toFixed(1) : '0.0'}</ThemedText>
           <ThemedText style={styles.releaseDate}>{item.release_date}</ThemedText>
         </ThemedView>
       </TouchableOpacity>

@@ -1,34 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
-  ActivityIndicator, 
-  TouchableOpacity,
-  Alert 
-} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
-// @ts-ignore --- Mengabaikan pengecekan ketat TypeScript khusus untuk API TMDB kamu
-import { getMovieDetails, Movie } from '../src/services/tmdbApi';
-
-// @ts-ignore --- Mengabaikan pengecekan ketat TypeScript khusus untuk file backend JS temanmu
-import { addMovieToFavorites } from '../src/services/firebaseService'; 
-// @ts-ignore --- Mengabaikan pengecekan ketat TypeScript
-import { useAuth } from '../src/hooks/useAuth'; 
+// @ts-ignore
+import { getMovieDetails } from '../src/services/tmdbApi';
+// @ts-ignore
+import { addMovieToFavorites } from '../src/services/firebaseService';
+// @ts-ignore
+import { useAuth } from '../src/hooks/useAuth';
 
 export default function DetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams(); 
   
-  // Ambil user dari hook buatan temanmu (jika belum ada, dia akan bernilai null/undefined)
-  const authContext = useAuth(); 
+  // Mengubah tipe menjadi 'any' agar TypeScript mengizinkan pemanggilan .user
+  const authContext = useAuth() as any; 
   const user = authContext?.user; 
 
-  const [movie, setMovie] = useState<Movie | null>(null);
+  const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +53,6 @@ export default function DetailScreen() {
   const handleAddToWatchlist = async () => {
     if (!movie) return;
 
-    // Jika temanmu belum selesai membuat sistem login, kita beri pengaman ID cadangan dulu biar tidak crash
     const userId = user?.uid || "user_praktikum_master";
 
     try {
@@ -68,7 +66,6 @@ export default function DetailScreen() {
         release_date: movie.release_date
       };
 
-      // Panggil fungsi Firestore temanmu
       const result = await addMovieToFavorites(userId, movieData);
 
       if (result && result.success) {
@@ -114,7 +111,7 @@ export default function DetailScreen() {
         <ThemedText type="title" style={styles.title}>{movie.title}</ThemedText>
         
         <ThemedView style={styles.metaContainer}>
-          <ThemedText style={styles.rating}>⭐ {movie.vote_average.toFixed(1)}</ThemedText>
+          <ThemedText style={styles.rating}>⭐ {movie.vote_average ? movie.vote_average.toFixed(1) : '0.0'}</ThemedText>
           <ThemedText style={styles.releaseDate}>📅 {movie.release_date}</ThemedText>
         </ThemedView>
 
@@ -138,7 +135,7 @@ export default function DetailScreen() {
             <ThemedText style={styles.watchlistButtonText}>➕ Tambah ke Watchlist</ThemedText>
           )}
         </TouchableOpacity>
-      </</ThemedView>
+      </ThemedView>
     </ScrollView>
   );
 }

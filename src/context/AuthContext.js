@@ -1,29 +1,40 @@
 // src/context/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword, // Tambahkan ini untuk login
+  signOut // Tambahkan ini untuk logout
+} from 'firebase/auth';
+import React, { createContext, useEffect, useState } from 'react';
 import { auth } from '../config/firebaseConfig';
 
-// Buat Context
 export const AuthContext = createContext({});
 
-// Buat Provider
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Fungsi Login
+  const login = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  // 2. Fungsi Logout
+  const logout = () => {
+    return signOut(auth);
+  };
+
   useEffect(() => {
-    // Memantau status autentikasi Firebase
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
 
-    // Clean up subscription
     return unsubscribe;
   }, []);
 
+  // Masukkan fungsi login dan logout ke dalam value Provider
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
