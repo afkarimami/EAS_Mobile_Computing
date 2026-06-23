@@ -26,11 +26,10 @@ function NavigationGate() {
     const inTabsGroup = segments[0] === '(tabs)';
 
     if (!user && inTabsGroup) {
-      // Jika BELUM login dan mencoba buka halaman utama, lempar ke halaman login
-      // Sesuaikan path '/login' jika temanmu menaruh file loginnya di tempat lain (misal: 'app/login.tsx')
-      router.replace('/login' as any); 
+      // 🛠️ PERUBAHAN 1: Diubah ke '/register' agar halaman daftar yang mengunci di awal aplikasi
+      router.replace('/register' as any); 
     } else if (user && !inTabsGroup) {
-      // Jika SUDAH login tapi terdampar di luar, kembalikan ke halaman utama
+      // Jika SUDAH login tapi terdampar di luar, kembalikan ke halaman utama (tabs)
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
@@ -46,8 +45,11 @@ function NavigationGate() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      {/* Daftarkan halaman login temanmu di sini jika dibutuhkan */}
       <Stack.Screen name="login" options={{ headerShown: false, title: 'Login' }} />
+      
+      {/* 🛠️ PERUBAHAN 2: Mendaftarkan file register baru ke dalam sistem navigasi Expo Stack */}
+      <Stack.Screen name="register" options={{ headerShown: false, title: 'Register' }} />
+      
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );

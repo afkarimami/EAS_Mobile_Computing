@@ -28,13 +28,12 @@ export default function LoginScreen() {
     }
 
     try {
-      setLoading(false);
       setLoading(true);
       // Memanggil fungsi login Firebase milik temanmu
       await login(email, password);
       
       Alert.alert('Berhasil', 'Selamat datang di CineTracker!');
-      router.replace('/(tabs)'); // Lempar ke halaman utama film setelah login sukses
+      router.replace('/(tabs)'); 
     } catch (error: any) {
       let errorMessage = 'Gagal login. Periksa kembali akun Anda.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -87,6 +86,15 @@ export default function LoginScreen() {
             <ThemedText style={styles.buttonText}>Masuk</ThemedText>
           )}
         </TouchableOpacity>
+
+        {/* 🛠️ PERUBAHAN BARU: Tombol untuk pindah ke halaman Register */}
+        <TouchableOpacity 
+          onPress={() => router.replace('/register' as any)} 
+          style={styles.linkButton}
+        >
+          <ThemedText style={styles.linkText}>Belum punya akun? Daftar di sini</ThemedText>
+        </TouchableOpacity>
+
       </ThemedView>
     </ThemedView>
   );
@@ -117,4 +125,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: { backgroundColor: '#ccc' },
   buttonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
+  // Stylings tambahan untuk teks link register
+  linkButton: { alignItems: 'center', marginTop: 15 },
+  linkText: { color: '#A1CEDC', fontSize: 14, fontWeight: '500' },
 });
