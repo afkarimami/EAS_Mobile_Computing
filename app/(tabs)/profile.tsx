@@ -114,7 +114,7 @@ export default function WatchlistScreen() {
             onPress={() => router.push('/')}
             activeOpacity={0.7}
           >
-            <ThemedText style={styles.backButtonText}>⬅   Home</ThemedText>
+            <ThemedText style={styles.backButtonText}>Home</ThemedText>
           </TouchableOpacity>
           
           <View style={styles.titleWrapper}>

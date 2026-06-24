@@ -42,7 +42,7 @@ const GENRES = [
 export default function HomeScreen() {
   const router = useRouter();
   
-  // AMBIL FUNGSI DARI AUTH CONTEXT (ubahSandi dihapus dari sini karena pindah ke screen baru)
+  // AMBIL FUNGSI DARI AUTH CONTEXT 
   const { logout, user } = useContext(AuthContext) as any;
   
   // AMBIL FUNGSI DAN DATA WARNA DARI THEME CONTEXT
@@ -342,7 +342,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL SETTINGS MODIFIKASI: SEKARANG LANGSUNG PINDAH SCREEN KE HALAMAN GANTI SANDI */}
+      {/* MODAL SETTINGS */}
       <Modal visible={settingsVisible} transparent={true} animationType="fade" onRequestClose={() => setSettingsVisible(false)}>
         <View style={styles.centerOverlay}>
           <View style={[styles.settingsModalContent, { backgroundColor: colors.surface }]}>
@@ -355,28 +355,28 @@ export default function HomeScreen() {
                 style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'dark' && styles.themeOptionSelected]} 
                 onPress={() => toggleTheme('dark')}
               >
-                <ThemedText style={{ color: theme === 'dark' ? '#fff' : colors.text }}>🌙 Dark</ThemedText>
+                <ThemedText style={{ color: theme === 'dark' ? '#fff' : colors.text }}>Dark</ThemedText>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'light' && styles.themeOptionSelected]} 
                 onPress={() => toggleTheme('light')}
               >
-                <ThemedText style={{ color: theme === 'light' ? '#fff' : colors.text }}>☀️ Light</ThemedText>
+                <ThemedText style={{ color: theme === 'light' ? '#fff' : colors.text }}>Light</ThemedText>
               </TouchableOpacity>
             </View>
 
             <View style={[styles.dividerLine, { backgroundColor: colors.border, width: '100%', marginVertical: 15 }]} />
 
-            {/* TOMBOL AKSI: MENGARAHKAN LANGSUNG KE SCREEN FULL GANTI SANDI */}
+            {/* TOMBOL AKSI GANTI SANDI */}
             <TouchableOpacity 
               style={[styles.settingsButton, { borderColor: colors.border, width: '100%', marginBottom: 15, backgroundColor: colors.background }]} 
               onPress={() => {
-                setSettingsVisible(false); // Tutup modal settings agar bersih
-                router.push('/change-password'); // Masuk ke screen /app/(tabs)/change-password.tsx
+                setSettingsVisible(false); 
+                router.push('/change-password'); 
               }}
             >
-              <ThemedText style={[styles.settingsButtonText, { color: colors.text }]}>🔑 Ganti Sandi</ThemedText>
+              <ThemedText style={[styles.settingsButtonText, { color: colors.text }]}>Ganti Sandi</ThemedText>
             </TouchableOpacity>
 
             {/* TOMBOL CLOSE POPUP UTAMA */}
@@ -432,7 +432,7 @@ export default function HomeScreen() {
           keyExtractor={(item, index) => item.id.toString() + index} 
           renderItem={renderMovieCard} 
           contentContainerStyle={styles.listContainer} 
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true} 
           ListFooterComponent={renderPaginationFooter} 
         />
       )}
