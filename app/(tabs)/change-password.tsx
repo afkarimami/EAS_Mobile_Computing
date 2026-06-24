@@ -1,15 +1,17 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform // 🟢 1. Import Platform untuk mendeteksi Web/HP
+  ,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 // @ts-ignore
 import { AuthContext } from '../../src/context/AuthContext';
 import { useAppTheme } from '../../src/context/ThemeContext';
@@ -23,24 +25,56 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Fungsi pembantu untuk memunculkan pesan sesuai platform (Web / HP)
+  const showAlert = (title: string, message: string, action?: () => void) => {
+    if (Platform.OS === 'web') {
+      alert(`${title}: ${message}`);
+      if (action) action(); // Langsung eksekusi rute balik jika di web
+    } else {
+      if (action) {
+        Alert.alert(title, message, [{ text: 'OK', onPress: action }]);
+      } else {
+        Alert.alert(title, message);
+      }
+    }
+  };
+
   const handleSavePassword = async () => {
     if (newPassword.trim().length < 6) {
-      Alert.alert('Error', 'Sandi baru minimal harus 6 karakter!');
+      showAlert('Error', 'Sandi baru minimal harus 6 karakter!');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Konfirmasi sandi tidak cocok!');
+      showAlert('Error', 'Konfirmasi sandi tidak cocok!');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Mengirim permintaan ubah sandi ke Firebase...');
+      
+      // Eksekusi ke backend Firebase Auth
       await ubahSandi(newPassword);
-      Alert.alert('Sukses 🎉', 'Kata sandi berhasil diperbarui!', [
-        { text: 'OK', onPress: () => router.back() } // Kembali ke halaman sebelumnya
-      ]);
+      
+      console.log('Password sukses diperbarui di database Firebase!');
+      
+      // 🟢 2. Munculkan alert sukses dan otomatis kembali ke halaman sebelumnya
+      showAlert('Sukses 🎉', 'Kata sandi berhasil diperbarui!', () => {
+        router.back();
+      });
+
     } catch (err: any) {
-      Alert.alert('Gagal', err.message || 'Gagal mengubah kata sandi.');
+      console.error('Gagal ganti sandi:', err);
+      
+      // 🟢 3. Tangani proteksi keamanan ketat dari Firebase
+      let errorMessage = 'Gagal mengubah kata sandi.';
+      if (err.code === 'auth/requires-recent-login') {
+        errorMessage = 'Demi keamanan, Anda harus Logout terlebih dahulu lalu Login kembali sebelum mengganti kata sandi.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      showAlert('Gagal', errorMessage);
     } finally {
       setLoading(false);
     }
