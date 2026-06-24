@@ -24,7 +24,7 @@ import { getMoviesByGenre, getPopularMovies, getTopRatedMovies, getUpcomingMovie
 // @ts-ignore
 import { AuthContext } from '../../src/context/AuthContext';
 
-// ✨ IMPORT CUSTOM HOOK TEMA GLOBAL KITA
+// IMPORT CUSTOM HOOK TEMA GLOBAL KITA
 import { useAppTheme } from '../../src/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -41,9 +41,11 @@ const GENRES = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  
+  // AMBIL FUNGSI DARI AUTH CONTEXT (ubahSandi dihapus dari sini karena pindah ke screen baru)
   const { logout, user } = useContext(AuthContext) as any;
   
-  // ✨ AMBIL FUNGSI DAN DATA WARNA DARI THEME CONTEXT
+  // AMBIL FUNGSI DAN DATA WARNA DARI THEME CONTEXT
   const { colors, theme, toggleTheme } = useAppTheme();
 
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -54,8 +56,6 @@ export default function HomeScreen() {
   
   const [menuVisible, setMenuVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  
-  // ✨ STATE BARU UNTUK POPUP SETTINGS TEMA
   const [settingsVisible, setSettingsVisible] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -279,12 +279,11 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* SIDEBAR GENRE DENGAN TOMBOL SETTINGS DI BAWAHNYA */}
+      {/* SIDEBAR GENRE */}
       <Modal visible={sidebarVisible} transparent={true} animationType="fade" onRequestClose={() => setSidebarVisible(false)}>
         <View style={styles.sidebarContainer}>
           <View style={[styles.sidebarContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             
-            {/* Bagian Atas: Menu Genre */}
             <View style={{ flex: 1 }}>
               <View style={[styles.sidebarHeader, { borderColor: colors.border }]}>
                 <ThemedText style={[styles.sidebarTitle, { color: colors.text }]}>Menu</ThemedText>
@@ -308,7 +307,7 @@ export default function HomeScreen() {
               </ScrollView>
             </View>
 
-            {/* ✨ Bagian Bawah: Tombol Settings di Kiri Bawah Sidebar */}
+            {/* TOMBOL SETTINGS DI KIRI BAWAH SIDEBAR */}
             <View style={styles.sidebarFooter}>
               <TouchableOpacity 
                 style={[styles.settingsButton, { borderColor: colors.border }]} 
@@ -343,30 +342,48 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL SETTINGS POP-UP UNTUK MEMILIH TEMA (LIGHT / DARK) */}
+      {/* MODAL SETTINGS MODIFIKASI: SEKARANG LANGSUNG PINDAH SCREEN KE HALAMAN GANTI SANDI */}
       <Modal visible={settingsVisible} transparent={true} animationType="fade" onRequestClose={() => setSettingsVisible(false)}>
         <View style={styles.centerOverlay}>
           <View style={[styles.settingsModalContent, { backgroundColor: colors.surface }]}>
             <ThemedText style={[styles.settingsModalTitle, { color: colors.text }]}>Pengaturan Aplikasi</ThemedText>
-            <ThemedText style={{ fontSize: 14, color: colors.textMuted, marginBottom: 15 }}>Pilih Tema:</ThemedText>
             
+            {/* OPSI PILIH TEMA */}
+            <ThemedText style={{ fontSize: 14, color: colors.textMuted, marginBottom: 10, alignSelf: 'flex-start' }}>Pilih Tema:</ThemedText>
             <View style={styles.themeOptionsRow}>
               <TouchableOpacity 
                 style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'dark' && styles.themeOptionSelected]} 
                 onPress={() => toggleTheme('dark')}
               >
-                <ThemedText style={{ color: theme === 'dark' ? '#fff' : colors.text }}>Dark Mode</ThemedText>
+                <ThemedText style={{ color: theme === 'dark' ? '#fff' : colors.text }}>🌙 Dark</ThemedText>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'light' && styles.themeOptionSelected]} 
                 onPress={() => toggleTheme('light')}
               >
-                <ThemedText style={{ color: theme === 'light' ? '#fff' : colors.text }}>Light Mode</ThemedText>
+                <ThemedText style={{ color: theme === 'light' ? '#fff' : colors.text }}>☀️ Light</ThemedText>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.settingsCloseButton} onPress={() => setSettingsVisible(false)}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border, width: '100%', marginVertical: 15 }]} />
+
+            {/* TOMBOL AKSI: MENGARAHKAN LANGSUNG KE SCREEN FULL GANTI SANDI */}
+            <TouchableOpacity 
+              style={[styles.settingsButton, { borderColor: colors.border, width: '100%', marginBottom: 15, backgroundColor: colors.background }]} 
+              onPress={() => {
+                setSettingsVisible(false); // Tutup modal settings agar bersih
+                router.push('/change-password'); // Masuk ke screen /app/(tabs)/change-password.tsx
+              }}
+            >
+              <ThemedText style={[styles.settingsButtonText, { color: colors.text }]}>🔑 Ganti Sandi</ThemedText>
+            </TouchableOpacity>
+
+            {/* TOMBOL CLOSE POPUP UTAMA */}
+            <TouchableOpacity 
+              style={[styles.settingsCloseButton, { backgroundColor: '#222', width: '100%', alignItems: 'center' }]} 
+              onPress={() => setSettingsVisible(false)}
+            >
               <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Tutup</ThemedText>
             </TouchableOpacity>
           </View>
@@ -447,7 +464,6 @@ const styles = StyleSheet.create({
   sidebarItemText: { fontSize: 15, fontWeight: '600' },
   sidebarItemTextActive: { color: '#fff', fontWeight: 'bold' },
   
-  // ✨ Style Tambahan untuk Tombol Settings di Sidebar
   sidebarFooter: { paddingTop: 15, borderTopWidth: 1, borderColor: 'rgba(128,128,128,0.2)' },
   settingsButton: { padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center', width: '100%' },
   settingsButtonText: { fontSize: 15, fontWeight: 'bold' },
@@ -491,12 +507,11 @@ const styles = StyleSheet.create({
   tabButtonText: { fontSize: 12, fontWeight: '600' },
   tabButtonTextActive: { color: '#fff', fontWeight: 'bold' },
 
-  // ✨ Style Baru untuk Modal Settings Pop-up Tengah
   centerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   settingsModalContent: { width: 300, padding: 20, borderRadius: 16, alignItems: 'center' },
   settingsModalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
   themeOptionsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, width: '100%', justifyContent: 'center' },
   themeOptionCard: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
   themeOptionSelected: { backgroundColor: '#FF3B30', borderColor: '#FF3B30' },
-  settingsCloseButton: { backgroundColor: '#FF3B30', paddingVertical: 8, paddingHorizontal: 24, borderRadius: 8 }
+  settingsCloseButton: { paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 }
 });
