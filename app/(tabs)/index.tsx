@@ -1,17 +1,17 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Dimensions,
   FlatList,
   Image,
+  Modal,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  View,
-  Modal,
-  Alert,
-  Dimensions
+  View
 } from 'react-native';
 // @ts-ignore
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,7 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
 // IMPORT FUNGSI DARI API TMDB
-import { getPopularMovies, getTopRatedMovies, getUpcomingMovies, Movie, searchMovies, getMoviesByGenre } from '../../src/services/tmdbApi';
+import { getMoviesByGenre, getPopularMovies, getTopRatedMovies, getUpcomingMovies, Movie, searchMovies } from '../../src/services/tmdbApi';
 // @ts-ignore
 import { AuthContext } from '../../src/context/AuthContext';
 
@@ -267,7 +267,7 @@ export default function HomeScreen() {
 
         <View style={styles.headerTextWrapper}>
           <ThemedText style={styles.logoText}>Movie<ThemedText style={styles.logoHighlight}>Licious</ThemedText></ThemedText>
-          <ThemedText style={styles.subtitleText}>Cari dan Simpan Film Favoritmu</ThemedText>
+          <ThemedText style={styles.subtitleText}>Cari Film Favoritmu Hanya Disini</ThemedText>
         </View>
         <TouchableOpacity style={styles.profileAvatarButton} onPress={() => setMenuVisible(true)}>
           <ThemedText style={styles.avatarIconText}>👤</ThemedText>
