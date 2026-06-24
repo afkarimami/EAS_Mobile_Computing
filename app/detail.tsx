@@ -1,21 +1,21 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
-  FlatList,
-  Dimensions,
 } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { getMovieDetails, getMovieCredits, getMovieRecommendations, getMovieVideos, Movie } from '../src/services/tmdbApi';
+import { getMovieCredits, getMovieDetails, getMovieRecommendations, getMovieVideos, Movie } from '../src/services/tmdbApi';
 
 // 🛠️ Hubungkan komponen trailer pintar kita
-import MovieTrailer from './MovieTrailer'; 
+import MovieTrailer from './MovieTrailer';
 
 const { width } = Dimensions.get('window');
 

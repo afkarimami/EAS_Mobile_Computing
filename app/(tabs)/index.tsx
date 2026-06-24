@@ -24,6 +24,9 @@ import { getMoviesByGenre, getPopularMovies, getTopRatedMovies, getUpcomingMovie
 // @ts-ignore
 import { AuthContext } from '../../src/context/AuthContext';
 
+// ✨ IMPORT CUSTOM HOOK TEMA GLOBAL KITA
+import { useAppTheme } from '../../src/context/ThemeContext';
+
 const { width } = Dimensions.get('window');
 
 const GENRES = [
@@ -39,6 +42,9 @@ const GENRES = [
 export default function HomeScreen() {
   const router = useRouter();
   const { logout, user } = useContext(AuthContext) as any;
+  
+  // ✨ AMBIL FUNGSI DAN DATA WARNA DARI THEME CONTEXT
+  const { colors, theme, toggleTheme } = useAppTheme();
 
   const [movies, setMovies] = useState<Movie[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +54,9 @@ export default function HomeScreen() {
   
   const [menuVisible, setMenuVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  
+  // ✨ STATE BARU UNTUK POPUP SETTINGS TEMA
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<'popular' | 'top_rated' | 'upcoming'>('popular');
@@ -147,12 +156,9 @@ export default function HomeScreen() {
     }
   };
 
-  // 🛠️ FUNGSI YANG SUDAH DIPERBAIKI: Menggunakan userKey dinamis agar sinkron dengan profil
   const handleAddToWatchlist = async (movie: Movie) => {
     try {
-      // Membuat kunci unik berdasarkan email user terlogin
       const userKey = user?.email ? `user_watchlist_${user.email}` : 'user_watchlist_guest';
-      
       const existingWatchlistRaw = await AsyncStorage.getItem(userKey);
       let currentWatchlist = existingWatchlistRaw ? JSON.parse(existingWatchlistRaw) : [];
 
@@ -170,7 +176,6 @@ export default function HomeScreen() {
         release_date: movie.release_date
       });
 
-      // Menyimpan data film ke loker akun yang sedang aktif
       await AsyncStorage.setItem(userKey, JSON.stringify(currentWatchlist));
       Alert.alert('Sukses 🎉', `"${movie.title}" masuk ke Watchlist!`);
     } catch (err) {
@@ -195,7 +200,7 @@ export default function HomeScreen() {
 
     return (
       <TouchableOpacity 
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
         activeOpacity={0.8}
         onPress={() => {
           router.push({ pathname: '/detail', params: { id: item.id } });
@@ -203,7 +208,7 @@ export default function HomeScreen() {
       >
         <Image source={{ uri: posterUrl }} style={styles.poster} />
         <View style={styles.infoContainer}>
-          <ThemedText numberOfLines={2} style={styles.movieTitle}>
+          <ThemedText numberOfLines={2} style={[styles.movieTitle, { color: colors.text }]}>
             {item.title}
           </ThemedText>
           <View style={styles.ratingContainer}>
@@ -212,7 +217,7 @@ export default function HomeScreen() {
               {item.vote_average ? item.vote_average.toFixed(1) : '0.0'}
             </ThemedText>
           </View>
-          <ThemedText style={styles.releaseDate}>Release: {item.release_date || 'N/A'}</ThemedText>
+          <ThemedText style={[styles.releaseDate, { color: colors.textMuted }]}>Release: {item.release_date || 'N/A'}</ThemedText>
           
           <TouchableOpacity 
             style={styles.watchlistButton}
@@ -239,8 +244,8 @@ export default function HomeScreen() {
           <ThemedText style={styles.pageButtonText}>◀ Prev</ThemedText>
         </TouchableOpacity>
 
-        <View style={styles.pageIndicatorBox}>
-          <ThemedText style={styles.pageIndicatorText}>
+        <View style={[styles.pageIndicatorBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ThemedText style={[styles.pageIndicatorText, { color: colors.textMuted }]}>
             Halaman {currentPage}
           </ThemedText>
         </View>
@@ -258,42 +263,64 @@ export default function HomeScreen() {
   const isPureCategoryMode = searchQuery.trim() === '' && selectedGenre === 'all';
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER BAR */}
       <View style={styles.topRowContainer}>
-        <TouchableOpacity style={styles.sidebarToggle} onPress={() => setSidebarVisible(true)}>
-          <ThemedText style={styles.sidebarToggleText}>☰</ThemedText>
+        <TouchableOpacity style={[styles.sidebarToggle, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setSidebarVisible(true)}>
+          <ThemedText style={[styles.sidebarToggleText, { color: colors.text }]}>☰</ThemedText>
         </TouchableOpacity>
 
         <View style={styles.headerTextWrapper}>
-          <ThemedText style={styles.logoText}>Movie<ThemedText style={styles.logoHighlight}>Licious</ThemedText></ThemedText>
-          <ThemedText style={styles.subtitleText}>Cari Film Favoritmu Hanya Disini</ThemedText>
+          <ThemedText style={[styles.logoText, { color: colors.text }]}>Movie<ThemedText style={styles.logoHighlight}>Licious</ThemedText></ThemedText>
+          <ThemedText style={[styles.subtitleText, { color: colors.textMuted }]}>Cari Film Favoritmu Hanya Disini</ThemedText>
         </View>
-        <TouchableOpacity style={styles.profileAvatarButton} onPress={() => setMenuVisible(true)}>
+        <TouchableOpacity style={[styles.profileAvatarButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setMenuVisible(true)}>
           <ThemedText style={styles.avatarIconText}>👤</ThemedText>
         </TouchableOpacity>
       </View>
 
-      {/* SIDEBAR GENRE */}
+      {/* SIDEBAR GENRE DENGAN TOMBOL SETTINGS DI BAWAHNYA */}
       <Modal visible={sidebarVisible} transparent={true} animationType="fade" onRequestClose={() => setSidebarVisible(false)}>
         <View style={styles.sidebarContainer}>
-          <View style={styles.sidebarContent}>
-            <View style={styles.sidebarHeader}>
-              <ThemedText style={styles.sidebarTitle}>Filter Genre</ThemedText>
-              <TouchableOpacity onPress={() => setSidebarVisible(false)}>
-                <ThemedText style={styles.closeButtonText}>✕</ThemedText>
+          <View style={[styles.sidebarContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            
+            {/* Bagian Atas: Menu Genre */}
+            <View style={{ flex: 1 }}>
+              <View style={[styles.sidebarHeader, { borderColor: colors.border }]}>
+                <ThemedText style={[styles.sidebarTitle, { color: colors.text }]}>Menu</ThemedText>
+                <TouchableOpacity onPress={() => setSidebarVisible(false)}>
+                  <ThemedText style={[styles.closeButtonText, { color: colors.textMuted }]}>✕</ThemedText>
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.sidebarList} showsVerticalScrollIndicator={false}>
+                {GENRES.map((genre) => {
+                  const isSelected = selectedGenre === genre.id;
+                  return (
+                    <TouchableOpacity 
+                      key={genre.id} 
+                      style={[styles.sidebarItem, { backgroundColor: colors.background }, isSelected && styles.sidebarItemActive]} 
+                      onPress={() => handleGenreSelect(genre.id)}
+                    >
+                      <ThemedText style={[styles.sidebarItemText, { color: colors.textMuted }, isSelected && styles.sidebarItemTextActive]}>{genre.name}</ThemedText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* ✨ Bagian Bawah: Tombol Settings di Kiri Bawah Sidebar */}
+            <View style={styles.sidebarFooter}>
+              <TouchableOpacity 
+                style={[styles.settingsButton, { borderColor: colors.border }]} 
+                onPress={() => {
+                  setSidebarVisible(false);
+                  setSettingsVisible(true);
+                }}
+              >
+                <ThemedText style={[styles.settingsButtonText, { color: colors.text }]}>⚙️ Settings</ThemedText>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.sidebarList}>
-              {GENRES.map((genre) => {
-                const isSelected = selectedGenre === genre.id;
-                return (
-                  <TouchableOpacity key={genre.id} style={[styles.sidebarItem, isSelected && styles.sidebarItemActive]} onPress={() => handleGenreSelect(genre.id)}>
-                    <ThemedText style={[styles.sidebarItemText, isSelected && styles.sidebarItemTextActive]}>{genre.name}</ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+
           </View>
           <TouchableOpacity style={styles.sidebarOverlayClose} activeOpacity={1} onPress={() => setSidebarVisible(false)} />
         </View>
@@ -302,13 +329,13 @@ export default function HomeScreen() {
       {/* DROPDOWN PROFIL */}
       <Modal visible={menuVisible} transparent={true} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
-          <View style={styles.dropdownMenu}>
-            <ThemedText style={styles.userEmailText} numberOfLines={1}>{user?.email || 'user_master'}</ThemedText>
-            <View style={styles.dividerLine} />
+          <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <ThemedText style={[styles.userEmailText, { color: colors.textMuted }]} numberOfLines={1}>{user?.email || 'user_master'}</ThemedText>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.menuRow} onPress={() => { setMenuVisible(false); router.push('/profile'); }}>
-              <ThemedText style={styles.menuText}>My Watchlist</ThemedText>
+              <ThemedText style={[styles.menuText, { color: colors.text }]}>My Watchlist</ThemedText>
             </TouchableOpacity>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
               <ThemedText style={styles.logoutTextText}>Keluar / Logout</ThemedText>
             </TouchableOpacity>
@@ -316,22 +343,58 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* MODAL SETTINGS POP-UP UNTUK MEMILIH TEMA (LIGHT / DARK) */}
+      <Modal visible={settingsVisible} transparent={true} animationType="fade" onRequestClose={() => setSettingsVisible(false)}>
+        <View style={styles.centerOverlay}>
+          <View style={[styles.settingsModalContent, { backgroundColor: colors.surface }]}>
+            <ThemedText style={[styles.settingsModalTitle, { color: colors.text }]}>Pengaturan Aplikasi</ThemedText>
+            <ThemedText style={{ fontSize: 14, color: colors.textMuted, marginBottom: 15 }}>Pilih Tema:</ThemedText>
+            
+            <View style={styles.themeOptionsRow}>
+              <TouchableOpacity 
+                style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'dark' && styles.themeOptionSelected]} 
+                onPress={() => toggleTheme('dark')}
+              >
+                <ThemedText style={{ color: theme === 'dark' ? '#fff' : colors.text }}>Dark Mode</ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.themeOptionCard, { borderColor: colors.border }, theme === 'light' && styles.themeOptionSelected]} 
+                onPress={() => toggleTheme('light')}
+              >
+                <ThemedText style={{ color: theme === 'light' ? '#fff' : colors.text }}>Light Mode</ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.settingsCloseButton} onPress={() => setSettingsVisible(false)}>
+              <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Tutup</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* SEARCH BAR */}
       <View style={styles.searchWrapper}>
-        <TextInput style={styles.searchBar} placeholder="Cari film favoritmu..." placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} />
+        <TextInput 
+          style={[styles.searchBar, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} 
+          placeholder="Cari film favoritmu..." 
+          placeholderTextColor={theme === 'dark' ? '#666' : '#aaa'} 
+          value={searchQuery} 
+          onChangeText={handleSearch} 
+        />
       </View>
 
       {/* TAB SELECTION BAR */}
       {isPureCategoryMode && (
         <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tabButton, activeTab === 'popular' && styles.tabButtonActive]} onPress={() => handleTabChange('popular')}>
-            <ThemedText style={[styles.tabButtonText, activeTab === 'popular' && styles.tabButtonTextActive]}>Populer</ThemedText>
+          <TouchableOpacity style={[styles.tabButton, { backgroundColor: colors.surface, borderColor: colors.border }, activeTab === 'popular' && styles.tabButtonActive]} onPress={() => handleTabChange('popular')}>
+            <ThemedText style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 'popular' && styles.tabButtonTextActive]}>Populer</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabButton, activeTab === 'top_rated' && styles.tabButtonActive]} onPress={() => handleTabChange('top_rated')}>
-            <ThemedText style={[styles.tabButtonText, activeTab === 'top_rated' && styles.tabButtonTextActive]}>Top Rated</ThemedText>
+          <TouchableOpacity style={[styles.tabButton, { backgroundColor: colors.surface, borderColor: colors.border }, activeTab === 'top_rated' && styles.tabButtonActive]} onPress={() => handleTabChange('top_rated')}>
+            <ThemedText style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 'top_rated' && styles.tabButtonTextActive]}>Top Rated</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabButton, activeTab === 'upcoming' && styles.tabButtonActive]} onPress={() => handleTabChange('upcoming')}>
-            <ThemedText style={[styles.tabButtonText, activeTab === 'upcoming' && styles.tabButtonTextActive]}>Upcoming</ThemedText>
+          <TouchableOpacity style={[styles.tabButton, { backgroundColor: colors.surface, borderColor: colors.border }, activeTab === 'upcoming' && styles.tabButtonActive]} onPress={() => handleTabChange('upcoming')}>
+            <ThemedText style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 'upcoming' && styles.tabButtonTextActive]}>Upcoming</ThemedText>
           </TouchableOpacity>
         </View>
       )}
@@ -361,48 +424,53 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   topRowContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20, backgroundColor: 'transparent', gap: 15 },
-  sidebarToggle: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#1E1E1E', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2A2A2A' },
-  sidebarToggleText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  sidebarToggle: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  sidebarToggleText: { fontSize: 22, fontWeight: 'bold' },
   headerTextWrapper: { backgroundColor: 'transparent', flex: 1 },
-  logoText: { fontSize: 26, fontWeight: '900', color: '#fff' },
+  logoText: { fontSize: 26, fontWeight: '900' },
   logoHighlight: { color: '#FF3B30', fontSize: 26, fontWeight: '900' },
-  subtitleText: { fontSize: 13, color: '#aaa', marginTop: 2 },
-  profileAvatarButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1E1E1E', borderWidth: 1.5, borderColor: '#333', justifyContent: 'center', alignItems: 'center' },
+  subtitleText: { fontSize: 13, marginTop: 2 },
+  profileAvatarButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   avatarIconText: { fontSize: 18 },
   
   sidebarContainer: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.6)' },
   sidebarOverlayClose: { flex: 1 }, 
-  sidebarContent: { width: Math.min(width * 0.75, 280), backgroundColor: '#161616', height: '100%', padding: 20, borderTopRightRadius: 16, borderBottomRightRadius: 16, borderRightWidth: 1, borderColor: '#2A2A2A' },
-  sidebarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, paddingBottom: 15, borderBottomWidth: 1, borderColor: '#2A2A2A' },
-  sidebarTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  closeButtonText: { color: '#aaa', fontSize: 18, fontWeight: 'bold', paddingHorizontal: 5 },
+  sidebarContent: { width: Math.min(width * 0.75, 280), height: '100%', padding: 20, borderTopRightRadius: 16, borderBottomRightRadius: 16, borderRightWidth: 1, justifyContent: 'space-between' },
+  sidebarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, paddingBottom: 15, borderBottomWidth: 1 },
+  sidebarTitle: { fontSize: 18, fontWeight: 'bold' },
+  closeButtonText: { fontSize: 18, fontWeight: 'bold', paddingHorizontal: 5 },
   sidebarList: { flex: 1 },
-  sidebarItem: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, marginBottom: 8, backgroundColor: '#1E1E1E' },
+  sidebarItem: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, marginBottom: 8 },
   sidebarItemActive: { backgroundColor: '#FF3B30' },
-  sidebarItemText: { fontSize: 15, color: '#aaa', fontWeight: '600' },
+  sidebarItemText: { fontSize: 15, fontWeight: '600' },
   sidebarItemTextActive: { color: '#fff', fontWeight: 'bold' },
+  
+  // ✨ Style Tambahan untuk Tombol Settings di Sidebar
+  sidebarFooter: { paddingTop: 15, borderTopWidth: 1, borderColor: 'rgba(128,128,128,0.2)' },
+  settingsButton: { padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center', width: '100%' },
+  settingsButtonText: { fontSize: 15, fontWeight: 'bold' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  dropdownMenu: { position: 'absolute', top: 100, right: 20, backgroundColor: '#1E1E1E', borderRadius: 12, padding: 16, width: 200, borderWidth: 1, borderColor: '#2A2A2A' },
-  userEmailText: { fontSize: 13, color: '#aaa', marginBottom: 8, textAlign: 'center' },
-  dividerLine: { height: 1, backgroundColor: '#333', marginVertical: 8 },
+  dropdownMenu: { position: 'absolute', top: 100, right: 20, borderRadius: 12, padding: 16, width: 200, borderWidth: 1 },
+  userEmailText: { fontSize: 13, marginBottom: 8, textAlign: 'center' },
+  dividerLine: { height: 1, marginVertical: 8 },
   menuRow: { paddingVertical: 6, width: '100%' },
-  menuText: { color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  menuText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
   logoutRow: { paddingVertical: 4, alignItems: 'center', width: '100%' },
   logoutTextText: { color: '#FF3B30', fontWeight: 'bold', fontSize: 15 },
   searchWrapper: { paddingHorizontal: 20, marginBottom: 15, backgroundColor: 'transparent' },
-  searchBar: { height: 50, borderColor: '#2A2A2A', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, backgroundColor: '#1E1E1E', color: '#fff', fontSize: 15 },
+  searchBar: { height: 50, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, fontSize: 15 },
   listContainer: { paddingHorizontal: 20, paddingBottom: 20 },
-  card: { flexDirection: 'row', marginBottom: 16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#2A2A2A' },
+  card: { flexDirection: 'row', marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1 },
   poster: { width: 95, height: 145, backgroundColor: '#2A2A2A' },
   infoContainer: { flex: 1, padding: 16, justifyContent: 'space-between' },
-  movieTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  movieTitle: { fontSize: 18, fontWeight: 'bold' },
   ratingContainer: { flexDirection: 'row', alignItems: 'center' },
   starIcon: { fontSize: 14, marginRight: 4 },
   ratingText: { fontSize: 14, fontWeight: '600', color: '#FFCC00' },
-  releaseDate: { fontSize: 12, color: '#777' },
+  releaseDate: { fontSize: 12 },
   watchlistButton: { alignSelf: 'flex-start', backgroundColor: 'rgba(255, 59, 48, 0.15)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, marginTop: 8 },
   watchlistButtonText: { color: '#FF3B30', fontSize: 12, fontWeight: 'bold' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
@@ -414,12 +482,21 @@ const styles = StyleSheet.create({
   pageButton: { backgroundColor: '#FF3B30', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 85, alignItems: 'center' },
   pageButtonDisabled: { backgroundColor: '#2A2A2A', opacity: 0.5 },
   pageButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  pageIndicatorBox: { backgroundColor: '#1E1E1E', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: '#2A2A2A' },
-  pageIndicatorText: { color: '#aaa', fontSize: 13, fontWeight: '600' },
+  pageIndicatorBox: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1 },
+  pageIndicatorText: { fontSize: 13, fontWeight: '600' },
 
   tabContainer: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 15 },
-  tabButton: { flex: 1, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1E1E1E', alignItems: 'center', borderWidth: 1, borderColor: '#2A2A2A' },
+  tabButton: { flex: 1, paddingVertical: 8, borderRadius: 20, alignItems: 'center', borderWidth: 1 },
   tabButtonActive: { backgroundColor: '#FF3B30', borderColor: '#FF3B30' },
-  tabButtonText: { color: '#aaa', fontSize: 12, fontWeight: '600' },
-  tabButtonTextActive: { color: '#fff', fontWeight: 'bold' }
+  tabButtonText: { fontSize: 12, fontWeight: '600' },
+  tabButtonTextActive: { color: '#fff', fontWeight: 'bold' },
+
+  // ✨ Style Baru untuk Modal Settings Pop-up Tengah
+  centerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  settingsModalContent: { width: 300, padding: 20, borderRadius: 16, alignItems: 'center' },
+  settingsModalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+  themeOptionsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, width: '100%', justifyContent: 'center' },
+  themeOptionCard: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
+  themeOptionSelected: { backgroundColor: '#FF3B30', borderColor: '#FF3B30' },
+  settingsCloseButton: { backgroundColor: '#FF3B30', paddingVertical: 8, paddingHorizontal: 24, borderRadius: 8 }
 });

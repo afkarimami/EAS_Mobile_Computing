@@ -5,7 +5,7 @@ if (Platform.OS === 'web') {
 }
 
 // 2. Import library pendukung lainnya (Tanpa ada yang kembar/duplikat lagi)
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useContext, useEffect } from 'react';
@@ -14,6 +14,9 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 // @ts-ignore
 import { AuthContext, AuthProvider } from '../src/context/AuthContext';
+
+// ✨ Ambil ThemeProvider buatan kita sendiri dan beri nama AppThemeProvider agar tidak bentrok
+import { ThemeProvider as AppThemeProvider } from '../src/context/ThemeContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -74,10 +77,13 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <NavigationGate />
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      {/* 🚀 Bungkus aplikasi dengan saklar tema utama kita di sini */}
+      <AppThemeProvider>
+        <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <NavigationGate />
+          <StatusBar style="auto" />
+        </NavigationThemeProvider>
+      </AppThemeProvider>
     </AuthProvider>
   );
 }
